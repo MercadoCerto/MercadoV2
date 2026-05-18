@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Lista de Compras — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<header class="header" id="main-header"></header>
+
+<main class="page">
+  <div class="container" style="padding-top:24px; padding-bottom:48px; max-width:720px; display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+
+    <!-- FORM NOVA LISTA -->
+    <div>
+      <h1 class="page-title">Lista de Compras</h1>
+      <p class="page-subtitle">Organize suas compras por lista</p>
+
+      <div class="card">
+        <h2 style="font-family:var(--font-head); font-size:17px; font-weight:700; margin-bottom:20px;">Nova lista</h2>
+
+        <form id="form-lista">
+          <div class="form-group">
+            <label class="form-label" for="listaNome">Nome da Lista <span class="req">*</span></label>
+            <input class="form-input" id="listaNome" type="text" placeholder="Ex: Compras do mês" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="listaItens">Itens <span style="font-weight:400; color:var(--ink-soft);">(um por linha, formato: item:qtd)</span></label>
+            <textarea class="form-textarea" id="listaItens" placeholder="Arroz:2&#10;Feijão:1&#10;Leite:3&#10;Ovos:12"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">
+            Salvar Lista
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- LISTAS SALVAS -->
+    <div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; margin-top:52px;">
+        <p style="font-family:var(--font-head); font-size:17px; font-weight:700;">Suas listas</p>
+        <button class="btn btn-ghost" id="btn-limpar" style="font-size:12px; padding:6px 12px;">Limpar tudo</button>
+      </div>
+      <div id="listas-container">
+        <!-- JS injeta aqui -->
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<style>
+  @media(max-width:640px){
+    .container { grid-template-columns:1fr !important; }
+    .page-title { margin-top:0 !important; }
+  }
+</style>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+  const STORAGE_KEY = 'mc_listas';
+
+  function getListas() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveListas(listas) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(listas));
+  }
+
+  function renderListas() {
+    const listas = getListas();
+    const container = document.getElementById('listas-container');
+
+    if (listas.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:40px 0;">
+          <div class="empty-state-icon">🛒</div>
+          <div class="empty-state-title">Nenhuma lista salva</div>
+          <div class="empty-state-text">Crie sua primeira lista ao lado.</div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+
+    listas.forEach((lista, idx) => {
+      const card = document.createElement('div');
+      card.className = 'card card-sm';
+      card.style.marginBottom = '14px';
+
+      const total    = lista.itens.length;
+      const checked  = lista.itens.filter(it => it.done).length;
+
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <div style="font-family:var(--font-head);font-weight:700;font-size:15px;">${lista.nome}</div>
+            <div style="font-size:12px;color:var(--ink-soft);">${checked}/${total} itens</div>
+          </div>
+          <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px;" data-del="${idx}">Excluir</button>
+        </div>
+        <div id="itens-${idx}">
+          ${lista.itens.map((item, iIdx) => `
+            <div class="shopping-list-item" data-lista="${idx}" data-item="${iIdx}">
+              <div class="shopping-list-check ${item.done ? 'checked' : ''}" data-check="${idx}-${iIdx}">
+                ${item.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+              </div>
+              <div class="shopping-list-text ${item.done ? 'checked' : ''}">${item.nome}</div>
+              ${item.qtd ? `<div class="shopping-list-qty">x${item.qtd}</div>` : ''}
+            </div>`).join('')}
+        </div>`;
+      container.appendChild(card);
+    });
+
+    // Toggle check
+    container.querySelectorAll('[data-check]').forEach(el => {
+      el.addEventListener('click', () => {
+        const [li, it] = el.dataset.check.split('-').map(Number);
+        const listas = getListas();
+        listas[li].itens[it].done = !listas[li].itens[it].done;
+        saveListas(listas);
+        renderListas();
+      });
+    });
+
+    // Delete lista
+    container.querySelectorAll('[data-del]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = +el.dataset.del;
+        const listas = getListas();
+        listas.splice(idx, 1);
+        saveListas(listas);
+        renderListas();
+        toast('Lista removida', 'info');
+      });
+    });
+  }
+
+  // Submit
+  document.getElementById('form-lista').addEventListener('submit', e => {
+    e.preventDefault();
+    const nome  = document.getElementById('listaNome').value.trim();
+    const texto = document.getElementById('listaItens').value.trim();
+
+    if (!nome) { toast('Dê um nome à lista', 'error'); return; }
+
+    const itens = texto.split('\n')
+      .map(l => l.trim()).filter(Boolean)
+      .map(l => {
+        const [nome, qtd] = l.split(':');
+        return { nome: nome.trim(), qtd: qtd ? qtd.trim() : '', done: false };
+      });
+
+    const listas = getListas();
+    listas.push({ nome, itens });
+    saveListas(listas);
+    renderListas();
+
+    document.getElementById('form-lista').reset();
+    toast('Lista salva!', 'success');
+  });
+
+  document.getElementById('btn-limpar').addEventListener('click', () => {
+    if (!confirm('Remover todas as listas?')) return;
+    saveListas([]);
+    renderListas();
+    toast('Listas removidas', 'info');
+  });
+
+  renderListas();
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Nova Senha — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- LEFT PANEL -->
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <a href="index.html" class="auth-logo">
+        <span class="brand-mercado">Mercado</span><span class="brand-certo">Certo</span>
+      </a>
+      <h2 class="auth-tagline">
+        Crie uma<br>nova senha<br><em>segura.</em>
+      </h2>
+      <p class="auth-description">
+        Escolha uma senha forte com pelo menos 6 caracteres.
+      </p>
+    </div>
+    <div class="auth-features">
+      <div class="auth-feature"><div class="auth-feature-dot"></div> Mínimo 6 caracteres</div>
+      <div class="auth-feature"><div class="auth-feature-dot"></div> Misture letras e números</div>
+      <div class="auth-feature"><div class="auth-feature-dot"></div> Não reutilize senhas antigas</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="auth-right">
+    <div class="auth-form-box">
+      <h1 class="auth-form-title">Criar nova senha</h1>
+      <p class="auth-form-subtitle">Digite e confirme sua nova senha abaixo</p>
+
+      <!-- Token inválido -->
+      <div id="token-invalido" style="display:none; text-align:center; padding:16px 0;">
+        <div style="font-size:48px; margin-bottom:16px;">❌</div>
+        <h3 style="font-family:var(--font-head); font-size:18px; font-weight:700; margin-bottom:8px; color:var(--danger)">
+          Link inválido ou expirado
+        </h3>
+        <p style="font-size:14px; color:var(--ink-soft); margin-bottom:20px;">
+          O link de recuperação é inválido ou já expirou. Solicite um novo.
+        </p>
+        <a href="recuperar-senha.html" class="btn btn-primary btn-full">Solicitar novo link</a>
+      </div>
+
+      <!-- Formulário -->
+      <div id="form-box">
+        <form id="form-nova-senha">
+          <div class="form-group">
+            <label class="form-label" for="senha">Nova senha <span class="req">*</span></label>
+            <input class="form-input" id="senha" type="password" placeholder="Mínimo 6 caracteres" required minlength="6"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmar">Confirmar senha <span class="req">*</span></label>
+            <input class="form-input" id="confirmar" type="password" placeholder="Repita a senha" required minlength="6"/>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-salvar" style="margin-top:8px;">
+            Salvar nova senha
+          </button>
+        </form>
+      </div>
+
+      <!-- Sucesso -->
+      <div id="sucesso-box" style="display:none; text-align:center; padding:16px 0;">
+        <div style="font-size:48px; margin-bottom:16px;">✅</div>
+        <h3 style="font-family:var(--font-head); font-size:20px; font-weight:700; margin-bottom:8px;">Senha alterada!</h3>
+        <p style="font-size:14px; color:var(--ink-soft); margin-bottom:20px;">
+          Sua senha foi redefinida com sucesso. Faça login para continuar.
+        </p>
+        <a href="login.html" class="btn btn-primary btn-full">Ir para o login</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="js/main.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+
+  if (!token) {
+    document.getElementById('form-box').style.display = 'none';
+    document.getElementById('token-invalido').style.display = 'block';
+  }
+
+  document.getElementById('form-nova-senha').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-salvar');
+    const senha = document.getElementById('senha').value;
+    const confirmar = document.getElementById('confirmar').value;
+
+    if (senha.length < 6) { toast('Senha deve ter ao menos 6 caracteres', 'error'); return; }
+    if (senha !== confirmar) { toast('As senhas não conferem', 'error'); return; }
+
+    setLoading(btn, true);
+    try {
+      const res = await fetch(`${API}/api/usuarios/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, novaSenha: senha })
+      });
+
+      if (res.ok) {
+        document.getElementById('form-box').style.display = 'none';
+        document.getElementById('sucesso-box').style.display = 'block';
+      } else {
+        const txt = await res.text();
+        if (txt.includes('inválido') || txt.includes('expirado')) {
+          document.getElementById('form-box').style.display = 'none';
+          document.getElementById('token-invalido').style.display = 'block';
+        } else {
+          toast(txt || 'Erro ao redefinir senha', 'error');
+        }
+      }
+    } catch {
+      toast('Erro de conexão', 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+</script>
+</body>
+</html>

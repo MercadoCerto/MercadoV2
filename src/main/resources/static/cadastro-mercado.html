@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cadastrar Mercado — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<header class="header" id="main-header"></header>
+
+<main class="page">
+  <div class="container-narrow" style="padding-top:24px; padding-bottom:48px;">
+
+    <div style="margin-bottom:24px;">
+      <a href="mercados.html" class="btn btn-ghost" style="margin-bottom:16px; display:inline-flex;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar
+      </a>
+      <h1 class="page-title">Cadastrar Mercado</h1>
+      <p class="page-subtitle">Registre um novo estabelecimento na plataforma</p>
+    </div>
+
+    <div class="card">
+      <form id="form-mercado">
+
+        <div class="form-group">
+          <label class="form-label" for="nome">Nome do Mercado <span class="req">*</span></label>
+          <input class="form-input" id="nome" type="text" placeholder="Ex: Supermercado Bom Preço" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="endereco">Endereço <span class="req">*</span></label>
+          <input class="form-input" id="endereco" type="text" placeholder="Ex: Rua das Flores, 123 - Centro" required/>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label class="form-label" for="cidade">Cidade <span class="req">*</span></label>
+            <input class="form-input" id="cidade" type="text" placeholder="Ex: São Paulo" required/>
+          </div>
+          <div class="form-group" style="max-width:120px">
+            <label class="form-label" for="cep">CEP</label>
+            <input class="form-input" id="cep" type="text" placeholder="00000-000" maxlength="9"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="foto">Foto do Mercado</label>
+          <div id="foto-preview-wrap" style="display:none;margin-bottom:10px;">
+            <img id="foto-preview" src="" alt="Prévia" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;border:1px solid var(--surface-3);"/>
+          </div>
+          <input class="form-input" id="foto" type="file" accept="image/jpeg,image/png,image/webp" style="padding:8px;"/>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">JPG, PNG ou WebP — máx. 5 MB (opcional)</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-submit">
+          Cadastrar Mercado
+        </button>
+
+      </form>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+  if (!requireComercio()) { throw new Error('Acesso negado'); }
+
+  // Prévia da foto
+  document.getElementById('foto').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast('A foto deve ter no máximo 5 MB', 'error');
+      this.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('foto-preview').src = e.target.result;
+      document.getElementById('foto-preview-wrap').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Máscara de CEP
+  document.getElementById('cep').addEventListener('input', function() {
+    let v = this.value.replace(/\D/g,'').slice(0,8);
+    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5);
+    this.value = v;
+  });
+
+  // Submit — geocodifica o endereço antes de salvar
+  document.getElementById('form-mercado').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit');
+
+    const nomeVal   = document.getElementById('nome').value.trim();
+    const endBase   = document.getElementById('endereco').value.trim();
+    const cidadeVal = document.getElementById('cidade').value.trim();
+    const cepVal    = document.getElementById('cep').value.trim();
+
+    if (!nomeVal || !endBase || !cidadeVal) {
+      toast('Preencha todos os campos obrigatórios', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Buscando localização...';
+
+    const endCompleto = cepVal ? `${endBase} - CEP: ${cepVal}` : endBase;
+    const coords = await geocodificarEndereco(endBase + (cepVal ? ', ' + cepVal : ''), cidadeVal);
+
+    if (!coords) {
+      toast('Não foi possível localizar o endereço no mapa. Verifique o endereço e a cidade.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Cadastrar Mercado';
+      return;
+    }
+
+    const mercado = {
+      nomeMercado: nomeVal,
+      endereco:    endCompleto,
+      cidade:      cidadeVal,
+      latitude:    coords.latitude,
+      longitude:   coords.longitude,
+    };
+
+    try {
+      btn.textContent = 'Salvando...';
+      const res = await fetch(`${API}/api/mercados`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(mercado)
+      });
+
+      if (!res.ok) { toast('Erro ao cadastrar mercado', 'error'); return; }
+
+      const salvo = await res.json();
+
+      // Envia foto se selecionada
+      const fotoFile = document.getElementById('foto').files[0];
+      if (fotoFile) {
+        btn.textContent = 'Enviando foto...';
+        const fd = new FormData();
+        fd.append('foto', fotoFile);
+        const resFoto = await fetch(`${API}/api/mercados/${salvo.idMercado}/foto`, {
+          method: 'POST',
+          body:   fd
+        });
+        if (!resFoto.ok) {
+          toast('Mercado cadastrado, mas houve erro ao salvar a foto. Tente novamente pela aba "Editar Dados".', 'error');
+        } else {
+          toast('Mercado cadastrado com foto no mapa!', 'success');
+        }
+      } else {
+        toast('Mercado cadastrado e localizado no mapa!', 'success');
+      }
+
+      document.getElementById('form-mercado').reset();
+      document.getElementById('foto-preview-wrap').style.display = 'none';
+    } catch {
+      toast('Erro de conexão', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Cadastrar Mercado';
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Ranking — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<header class="header" id="main-header"></header>
+
+<main class="page">
+  <div class="container" style="padding-top:24px; padding-bottom:48px; max-width:700px;">
+
+    <h1 class="page-title">Ranking de Mercados</h1>
+    <p class="page-subtitle">Os mercados melhor avaliados pelos usuários</p>
+
+    <div id="ranking-lista" class="ranking-list">
+      <div class="loading-center"><div class="spinner"></div></div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+  async function carregarRanking() {
+    const container = document.getElementById('ranking-lista');
+
+    try {
+      const res = await fetch(`${API}/api/avaliacoes/ranking`);
+      const lista = await res.json();
+
+      if (lista.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🏆</div>
+            <div class="empty-state-title">Sem dados de ranking ainda</div>
+            <div class="empty-state-text">Avalie mercados para ver o ranking aparecer aqui.</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      lista.forEach((item, i) => {
+        const pos   = i + 1;
+        const media = parseFloat(item.media) || 0;
+        const votos = item.votos || 0;
+
+        const rankClass = pos <= 3 ? ` rank-${pos}` : '';
+        const medals    = ['🥇','🥈','🥉'];
+        const posLabel  = pos <= 3 ? medals[pos - 1] : `${pos}º`;
+
+        const card = document.createElement('div');
+        card.className = `ranking-card${rankClass}`;
+        card.innerHTML = `
+          <div class="ranking-pos">${posLabel}</div>
+          <div class="ranking-info">
+            <div class="ranking-name">${item.nome_mercado}</div>
+            <div class="stars" style="font-size:13px;">${starsDisplay(media)}</div>
+            <div class="ranking-votes">${votos} ${votos === 1 ? 'avaliação' : 'avaliações'}</div>
+          </div>
+          <div class="ranking-score">
+            <div class="score-num">${media.toFixed(1)}</div>
+            <div style="font-size:11px; color:var(--ink-soft);">/ 5.0</div>
+          </div>`;
+        container.appendChild(card);
+      });
+
+    } catch {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⚠️</div>
+          <div class="empty-state-title">Erro ao carregar</div>
+          <div class="empty-state-text">Verifique se o servidor está rodando.</div>
+        </div>`;
+    }
+  }
+
+  carregarRanking();
+</script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mapa — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    body, html { height: 100%; }
+    .map-page  { height: 100%; }
+    #map { height: calc(100vh - 64px - 56px); width: 100%; }
+
+    /* InfoWindow do Google Maps */
+    .gm-style .gm-style-iw-c {
+      border-radius: 12px !important;
+      box-shadow: 0 6px 20px rgba(0,0,0,.15) !important;
+      padding: 12px !important;
+      font-family: 'Poppins', sans-serif;
+    }
+    .gm-style .gm-style-iw-d { overflow: hidden !important; }
+    .popup-content { min-width: 220px; max-width: 260px; font-family: 'Poppins', sans-serif; }
+    .popup-title { font-size: 15px; font-weight: 700; color: #0e1c14; margin-bottom: 6px; }
+    .popup-addr  { display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: #4b5563; background: #f3f4f6; border-radius: 6px; padding: 6px 8px; margin-bottom: 8px; line-height: 1.4; }
+    .popup-addr-icon { flex-shrink: 0; margin-top: 1px; }
+    .popup-link  { display: inline-block; font-size: 12px; color: #7c3aed; font-weight: 600; text-decoration: none; margin-top: 2px; }
+    .popup-link:hover { text-decoration: underline; }
+    .popup-foto { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; display: block; }
+    .popup-sem-foto { width: 100%; height: 80px; background: #f3f4f6; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<header class="header" id="main-header"></header>
+
+<div class="map-page">
+  <div class="map-search-bar">
+    <input class="map-search-input" id="buscaMercado" type="text" placeholder="🔍  Buscar mercado (ex: Atacadão)"/>
+    <button class="btn btn-primary" id="btnBuscar">Buscar</button>
+    <button class="btn btn-secondary" id="btnTodos">Ver todos</button>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+  // ============================================================
+  //  CONFIGURAÇÃO DA CHAVE GOOGLE MAPS
+  //  Substitua "GOOGLE_MAPS_KEY" pela sua chave real da
+  //  Google Maps JavaScript API (console.cloud.google.com).
+  // ============================================================
+  const GOOGLE_MAPS_KEY = 'AIzaSyCFqfqFEuD9DqAqdc59X2zuHlqpqnw1Jbs';
+
+  let map;
+  let infoWindow;
+  let todosMercados = [];
+  let marcadores = [];
+
+  // Inicializa o mapa (chamado pelo callback do script do Google)
+  function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+      center: { lat: -25.4284, lng: -49.2733 }, // Curitiba-PR
+      zoom: 12,
+      mapId: 'DEMO_MAP_ID', // necessário para AdvancedMarkerElement
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true
+    });
+
+    infoWindow = new google.maps.InfoWindow();
+    carregarMercados();
+  }
+
+  function limparMarcadores() {
+    marcadores.forEach(m => { m.map = null; });
+    marcadores = [];
+  }
+
+  function popupHtml(m) {
+    const linhaEndereco = [m.endereco, m.cidade].filter(Boolean).join(', ');
+    const enderecoHtml = linhaEndereco
+      ? `<div class="popup-addr"><span class="popup-addr-icon">📍</span><span>${linhaEndereco}</span></div>`
+      : `<div class="popup-addr"><span class="popup-addr-icon">📍</span><span>${Number(m.latitude).toFixed(5)}, ${Number(m.longitude).toFixed(5)}</span></div>`;
+
+    // Foto do mercado — com fallback caso não exista ou falhe ao carregar
+    const fotoHtml = m.foto
+      ? `<img class="popup-foto" src="${API}/uploads/${m.foto}" alt="${m.nomeMercado}"
+             onerror="this.outerHTML='<div class=\\'popup-sem-foto\\'>Imagem indisponível</div>'"/>`
+      : `<div class="popup-sem-foto">Sem foto cadastrada</div>`;
+
+    return `
+      <div class="popup-content">
+        ${fotoHtml}
+        <div class="popup-title">${m.nomeMercado}</div>
+        ${enderecoHtml}
+        <a class="popup-link" href="mercados.html">Ver avaliações →</a>
+      </div>`;
+  }
+
+  function exibirMercados(lista) {
+    limparMarcadores();
+    const bounds = new google.maps.LatLngBounds();
+    let temCoordenadas = false;
+
+    const { AdvancedMarkerElement, PinElement } = google.maps.marker;
+
+    lista.forEach(m => {
+      const lat = Number(m.latitude);
+      const lng = Number(m.longitude);
+      // Ignora coordenadas inválidas/zeradas (evita "(0,0)" que cai na costa da África)
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      if (lat === 0 && lng === 0) return;
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+      const pos = { lat, lng };
+
+      // Pin padrão do Google, customizado nas cores do projeto
+      const pin = new PinElement({
+        background: '#7c3aed',
+        borderColor: '#ffffff',
+        glyphColor: '#ffffff',
+        scale: 1.1
+      });
+
+      const marker = new AdvancedMarkerElement({
+        position: pos,
+        map,
+        content: pin.element,
+        title: m.nomeMercado
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.setContent(popupHtml(m));
+        infoWindow.open({ anchor: marker, map });
+      });
+
+      marcadores.push(marker);
+      bounds.extend(pos);
+      temCoordenadas = true;
+    });
+
+    if (temCoordenadas) {
+      map.fitBounds(bounds, 60);
+      // Limita zoom (min 11 pra não afastar demais, max 16 pra não colar na rua)
+      google.maps.event.addListenerOnce(map, 'idle', () => {
+        const z = map.getZoom();
+        if (z > 16) map.setZoom(16);
+        if (z < 11) map.setZoom(12);
+      });
+    } else {
+      // Sem mercados válidos: mantém Curitiba como fallback
+      map.setCenter({ lat: -25.4284, lng: -49.2733 });
+      map.setZoom(12);
+      toast('Nenhum mercado com localização cadastrada', 'info');
+    }
+  }
+
+  async function carregarMercados() {
+    try {
+      const res = await fetch(`${API}/api/mercados`);
+      todosMercados = await res.json();
+      exibirMercados(todosMercados);
+    } catch {
+      toast('Erro ao carregar mercados', 'error');
+    }
+  }
+
+  document.getElementById('btnBuscar').addEventListener('click', () => {
+    const termo = document.getElementById('buscaMercado').value.trim().toLowerCase();
+    if (!termo) { exibirMercados(todosMercados); return; }
+
+    const filtrados = todosMercados.filter(m =>
+      m.nomeMercado?.toLowerCase().includes(termo) ||
+      m.cidade?.toLowerCase().includes(termo) ||
+      m.endereco?.toLowerCase().includes(termo)
+    );
+
+    if (filtrados.length === 0) { toast('Nenhum mercado encontrado', 'info'); return; }
+    exibirMercados(filtrados);
+    toast(`${filtrados.length} mercado(s) encontrado(s)`, 'success');
+  });
+
+  document.getElementById('btnTodos').addEventListener('click', () => {
+    document.getElementById('buscaMercado').value = '';
+    exibirMercados(todosMercados);
+  });
+
+  document.getElementById('buscaMercado').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btnBuscar').click();
+  });
+
+  // Carrega o script do Google Maps dinamicamente com a chave configurada
+  (function carregarGoogleMaps() {
+    if (!GOOGLE_MAPS_KEY || GOOGLE_MAPS_KEY === 'GOOGLE_MAPS_KEY') {
+      document.getElementById('map').innerHTML =
+        '<div style="padding:24px;text-align:center;color:#6b7280;font-family:Poppins,sans-serif;">' +
+        '<h3 style="color:#dc2626;margin-bottom:8px;">⚠️ Chave Google Maps não configurada</h3>' +
+        '<p>Edite <code>mapa.html</code> e substitua <code>GOOGLE_MAPS_KEY</code> pela sua chave real.</p>' +
+        '<p style="margin-top:8px;font-size:13px;">Obter chave em: <a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a> → APIs → Maps JavaScript API</p>' +
+        '</div>';
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&callback=initMap&libraries=marker&language=pt-BR&region=BR&loading=async&v=weekly`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => toast('Falha ao carregar Google Maps. Verifique sua chave de API.', 'error');
+    document.head.appendChild(script);
+  })();
+</script>
+</body>
+</html>

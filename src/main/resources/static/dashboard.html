@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Meu Painel — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<header class="header" id="main-header"></header>
+
+<main class="page">
+  <div class="container" style="padding-top:24px; padding-bottom:48px;">
+
+    <!-- Banner admin -->
+    <div id="admin-banner" style="display:none;margin-bottom:20px;">
+      <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:var(--radius);padding:18px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-family:var(--font-head);font-size:16px;font-weight:700;">Modo Administrador</div>
+          <div style="font-size:13px;opacity:.85;margin-top:2px;">Você enxerga a visão do consumidor e também pode acessar o painel dos comércios.</div>
+        </div>
+        <a href="painel-comercio.html" style="background:#fff;color:#7c3aed;font-weight:700;padding:9px 18px;border-radius:var(--radius-sm);text-decoration:none;font-size:14px;white-space:nowrap;">
+          Painel do Comércio →
+        </a>
+      </div>
+    </div>
+
+    <!-- Welcome banner -->
+    <div class="dash-welcome">
+      <div class="dash-welcome-content">
+        <h2 id="dash-greeting">Ola!</h2>
+        <p>Acompanhe seus precos, listas de compras e mercados favoritos.</p>
+        <div class="dash-quick-actions">
+          <a href="lista-compra.html" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+            Minha Lista
+          </a>
+          <a href="comparar.html" class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Comparar Precos
+          </a>
+          <a href="lista-produtos.html" class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Ver Produtos
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="dash-grid" id="dash-stats">
+      <div class="dash-card">
+        <div class="dash-card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        </div>
+        <div class="dash-card-value" id="stat-produtos">-</div>
+        <div class="dash-card-label">Produtos cadastrados</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div class="dash-card-value" id="stat-mercados">-</div>
+        <div class="dash-card-label">Mercados disponiveis</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+        </div>
+        <div class="dash-card-value" id="stat-listas">-</div>
+        <div class="dash-card-label">Minhas listas</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="dash-card-value" id="stat-ranking">-</div>
+        <div class="dash-card-label">Melhor mercado</div>
+      </div>
+    </div>
+
+    <!-- Minhas Listas de Compras -->
+    <div class="dash-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 class="dash-section-title" style="margin-bottom:0;">Minhas Listas de Compras</h3>
+        <a href="lista-compra.html" class="btn btn-secondary" style="font-size:12px;padding:7px 14px;">Ver todas</a>
+      </div>
+      <div id="minhas-listas">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Top Mercados -->
+    <div class="dash-section">
+      <h3 class="dash-section-title">Top Mercados da Regiao</h3>
+      <div id="top-mercados">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Produtos em Destaque (menores precos) -->
+    <div class="dash-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 class="dash-section-title" style="margin-bottom:0;">Produtos com Menores Precos</h3>
+        <a href="lista-produtos.html" class="btn btn-secondary" style="font-size:12px;padding:7px 14px;">Ver todos</a>
+      </div>
+      <div id="produtos-destaque" class="products-grid">
+        <div style="grid-column:1/-1;" class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+  const usuario = getUsuarioLogado();
+  if (!usuario) {
+    window.location = 'login.html';
+  }
+
+  if (usuario && usuario.tipoConta === 'ADMIN') {
+    document.getElementById('admin-banner').style.display = 'block';
+  }
+
+  // Greeting
+  if (usuario) {
+    const hora = new Date().getHours();
+    let saudacao = 'Ola';
+    if (hora < 12) saudacao = 'Bom dia';
+    else if (hora < 18) saudacao = 'Boa tarde';
+    else saudacao = 'Boa noite';
+    document.getElementById('dash-greeting').textContent = `${saudacao}, ${usuario.nomeUsuario}!`;
+  }
+
+  async function carregarDashboard() {
+    try {
+      // Carregar dados em paralelo
+      const [resProd, resMerc, resRanking] = await Promise.all([
+        fetch(`${API}/api/produtos`).catch(() => null),
+        fetch(`${API}/api/mercados`).catch(() => null),
+        fetch(`${API}/api/avaliacoes/ranking`).catch(() => null)
+      ]);
+
+      const produtos = resProd && resProd.ok ? await resProd.json() : [];
+      const mercados = resMerc && resMerc.ok ? await resMerc.json() : [];
+      const ranking  = resRanking && resRanking.ok ? await resRanking.json() : [];
+
+      // Stats
+      document.getElementById('stat-produtos').textContent = produtos.length;
+      document.getElementById('stat-mercados').textContent = mercados.length;
+
+      // Melhor mercado
+      if (ranking.length > 0) {
+        document.getElementById('stat-ranking').textContent = ranking[0].nome_mercado || '-';
+        document.getElementById('stat-ranking').style.fontSize = '16px';
+      }
+
+      // Listas do usuario
+      if (usuario) {
+        try {
+          const resListas = await fetch(`${API}/api/lista/usuario/${usuario.idUsuario}`);
+          if (resListas.ok) {
+            const listas = await resListas.json();
+            document.getElementById('stat-listas').textContent = listas.length;
+            renderListas(listas.slice(0, 5));
+          } else {
+            document.getElementById('stat-listas').textContent = '0';
+            renderListas([]);
+          }
+        } catch {
+          document.getElementById('stat-listas').textContent = '0';
+          renderListas([]);
+        }
+      }
+
+      // Top mercados (ranking)
+      renderTopMercados(ranking.slice(0, 5));
+
+      // Produtos mais baratos
+      const sorted = [...produtos].sort((a, b) => (a.preco || 999999) - (b.preco || 999999));
+      renderProdutosDestaque(sorted.slice(0, 6), mercados);
+
+    } catch (err) {
+      console.error(err);
+      toast('Erro ao carregar dados do painel', 'error');
+    }
+  }
+
+  function renderListas(listas) {
+    const cont = document.getElementById('minhas-listas');
+    if (!listas.length) {
+      cont.innerHTML = `<div class="card card-sm" style="text-align:center;color:var(--ink-soft);font-size:14px;">
+        Voce ainda nao tem listas de compras. <a href="lista-compra.html" style="color:var(--green);font-weight:600;">Criar uma agora</a>
+      </div>`;
+      return;
+    }
+
+    cont.innerHTML = listas.map(l => `
+      <div class="card card-sm" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-family:var(--font-head);font-size:15px;font-weight:700;">${l.nomeLista || 'Lista sem nome'}</div>
+          <div style="font-size:12px;color:var(--ink-soft);">Criada em ${l.dataCriacao ? new Date(l.dataCriacao).toLocaleDateString('pt-BR') : '-'}</div>
+        </div>
+        <a href="lista-compra.html" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;">Abrir</a>
+      </div>
+    `).join('');
+  }
+
+  function renderTopMercados(ranking) {
+    const cont = document.getElementById('top-mercados');
+    if (!ranking.length) {
+      cont.innerHTML = `<div class="card card-sm" style="text-align:center;color:var(--ink-soft);font-size:14px;">
+        Nenhum mercado avaliado ainda.
+      </div>`;
+      return;
+    }
+
+    cont.innerHTML = ranking.map((r, i) => `
+      <div class="ranking-card ${i < 3 ? 'rank-' + (i+1) : ''}" style="margin-bottom:10px;">
+        <div class="ranking-pos">${i + 1}</div>
+        <div class="ranking-info">
+          <div class="ranking-name">${r.nome_mercado}</div>
+          <div class="ranking-votes">${r.votos || 0} avaliacao${(r.votos || 0) !== 1 ? 'es' : ''}</div>
+        </div>
+        <div class="ranking-score">
+          <div class="score-num">${r.media ? parseFloat(r.media).toFixed(1) : '-'}</div>
+          <div class="stars">${starsDisplay(r.media || 0)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderProdutosDestaque(produtos, mercados) {
+    const cont = document.getElementById('produtos-destaque');
+    const mercadoMap = Object.fromEntries(mercados.map(m => [m.idMercado, m.nomeMercado]));
+
+    if (!produtos.length) {
+      cont.innerHTML = `<div style="grid-column:1/-1;" class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <div class="empty-state-title">Nenhum produto cadastrado</div>
+      </div>`;
+      return;
+    }
+
+    cont.innerHTML = '';
+    produtos.forEach(p => {
+      const nomeMercado = mercadoMap[p.idMercado] || 'Nao informado';
+      const imgUrl = p.imagem ? `${API}/uploads/${p.imagem}` : null;
+
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        ${imgUrl
+          ? `<div class="product-card-img"><img src="${imgUrl}" alt="${p.nomeProduto}" loading="lazy"/></div>`
+          : `<div class="product-card-img-placeholder">
+               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".35"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+               <span>Sem imagem</span>
+             </div>`}
+        <div class="product-card-body">
+          <div class="product-card-name">${p.nomeProduto}</div>
+          <div class="product-card-meta">
+            <span class="badge badge-gray">${p.categoria || '—'}</span>
+            <span style="color:var(--ink-faint)">•</span>
+            <span>${p.marca || '—'}</span>
+          </div>
+          <div class="product-card-meta" style="margin-top:2px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            ${nomeMercado}
+          </div>
+          <div class="product-card-price">R$ ${(p.preco || 0).toFixed(2)}</div>
+        </div>`;
+      cont.appendChild(card);
+    });
+  }
+
+  carregarDashboard();
+</script>
+</body>
+</html>

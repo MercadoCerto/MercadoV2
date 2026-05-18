@@ -1,0 +1,235 @@
+
+
+
+
+
+MERCADOCERTO
+Plataforma de Comparação de Preços e Avaliação de Mercados
+
+
+TRABALHO 2
+Projeto Interface Web Centrado no Usuário
+Melhorias de UX e Aplicação de Conceitos de IHC
+
+Trabalho apresentado à disciplina de
+Desenvolvimento de Interface Web
+
+David Souza
+Lucas Michels
+Matheus Boller
+Pedro Karatchuk
+
+
+
+Curitiba
+2026
+
+SUMÁRIO
+Atualize este campo no Word: Ctrl+A e depois F9
+Nota: Ao abrir no Word, pressione Ctrl+A e F9 para atualizar o sumário.
+
+1 INTRODUÇÃO
+Este documento apresenta o Trabalho 2 da disciplina de Desenvolvimento de Interface Web. O objetivo é melhorar a interface do MercadoCerto, uma plataforma de comparação de preços e avaliação de mercados, aplicando os conceitos de affordance, interação, qualidade de uso e interface vistos em sala.
+O texto está dividido em duas partes. A Parte 1 lista as melhorias feitas a partir do feedback recebido na avaliação do Trabalho 1, organizadas por categoria. A Parte 2 conecta cada melhoria aos conceitos de IHC (Interação Humano-Computador), justificando as escolhas com base teórica.
+O feedback veio de uma sessão de review com colegas e com o professor, e cobriu pontos como tipografia, contraste, navegação, separação de perfis, validação de dados, responsividade e acessibilidade. Cada crítica foi avaliada e virou uma ação concreta no projeto.
+
+2 PARTE 1 — DOCUMENTAÇÃO DAS MELHORIAS
+A seguir estão as melhorias feitas a partir do feedback do Trabalho 1, agrupadas por categoria. Para cada uma, descrevemos o problema original, o que foi alterado e o efeito esperado na experiência do usuário.
+2.1 Tipografia e Legibilidade
+A tipografia foi o ponto mais criticado no review e voltou a aparecer em comentários de avaliadores diferentes. A queixa central era que a fonte dos títulos e da interface era "estilosa demais" e atrapalhava a leitura, sobretudo para o público-alvo da plataforma: donas de casa, pessoas mais velhas e usuários com dificuldade visual.
+Melhorias implementadas:
+– Substituição da fonte estilizada dos títulos e do corpo do site pela Poppins (Google Fonts), uma sans-serif geométrica que tem boa legibilidade em telas. A fonte estilizada ficou só na logomarca do MercadoCerto;
+– Ajuste da escala tipográfica: títulos principais reduzidos para 20px, subtítulos para 16px e corpo de texto mantido em 15px, resolvendo o excesso de tamanho apontado no review;
+– Padronização dos pesos: Bold (700) para títulos, SemiBold (600) para subtítulos, Regular (400) para corpo e Medium (500) para labels e botões. Isso dá uma hierarquia visual mais previsível.
+2.2 Contraste e Cores
+O feedback apontou problemas sérios de contraste que atrapalhavam a leitura e a acessibilidade. Textos em cinza claro sobre fundo claro estavam difíceis de enxergar, e algumas combinações de roxo sobre roxo deixavam o conteúdo praticamente ilegível.
+Melhorias implementadas:
+– Remoção do tema escuro/night: o fundo da aplicação foi padronizado em tons claros (branco #FFFFFF para cards e lavanda suave #F5F3FF para o fundo geral), mais coerente com a proposta de um sistema de compras;
+– Correção do contraste: todo texto principal passou a usar #1A1A2E (quase preto) sobre fundos claros. A razão de contraste fica acima de 7:1, o que atende ao nível AAA da WCAG 2.1;
+– Combinações roxo-sobre-roxo foram refeitas: onde antes havia texto roxo claro sobre fundo roxo, agora há texto escuro sobre fundo claro ou texto branco sobre fundo roxo sólido (#7C3AED), sempre dentro do contraste mínimo;
+– Mais espaço entre o texto "Cadastre-se gratuitamente" e os ícones de criar conta: padding de 16px e margin-top de 12px resolveram o efeito "colado/embaralhado" reportado.
+2.3 Navegação e Botão de Voltar
+Vários avaliadores notaram que faltava botão de voltar em diversas telas, o que forçava o uso da seta do navegador. Onde o botão existia, o redirecionamento estava errado e levava para telas que não eram as anteriores.
+Melhorias implementadas:
+– Botão "Voltar" padronizado em todas as telas internas, posicionado no canto superior esquerdo logo abaixo do header, com ícone de seta (←) e texto "Voltar", no estilo de um breadcrumb;
+– Os redirecionamentos dos botões já existentes foram corrigidos, de modo que cada um leva à tela hierarquicamente anterior no fluxo;
+– A lógica usa rotas explícitas como caminho principal e cai em history.back() como fallback, o que torna o comportamento mais previsível.
+2.4 Tela do Mapa Interativo
+O mapa abria mostrando o Brasil inteiro, sem filtro, o que não ajudava em nada o usuário no primeiro contato. Além disso, ao clicar em um mercado no mapa, não havia caminho direto para os detalhes daquele mercado.
+Melhorias implementadas:
+– O mapa agora carrega já centralizado na posição atual do usuário, usando a API de Geolocation do navegador;
+– O raio padrão é de 50km ao redor do usuário, o que evita abrir o mapa do Brasil inteiro logo de cara;
+– Foi adicionado um campo de busca manual por região (cidade, bairro ou CEP) para quem quiser consultar mercados em outras localidades;
+– Ao clicar em um mercado no mapa, o popup mostra um botão "Ver detalhes" que abre a página do mercado na mesma aba.
+2.5 Separação de Perfis: Consumidor e Comerciante
+Um dos problemas mais sérios era que qualquer usuário podia cadastrar produtos em qualquer mercado, abrindo espaço para dados falsos (alguém cadastrar "picanha a R$ 110" em um mercado alheio, por exemplo). Sem perfis separados, a confiabilidade dos dados ficava comprometida.
+Melhorias implementadas:
+– Foram criados dois tipos de cadastro distintos: Consumidor (CPF) e Comerciante (CNPJ), com validação de documento no momento do registro;
+– Cadastro e edição de produtos passaram a ser restritos: só o comerciante vinculado a um mercado pode cadastrar, editar e publicar preços daquele estabelecimento;
+– O comerciante tem uma tela exclusiva (Painel do Comércio) com menu próprio: Meus Mercados, Meus Produtos, Publicar Preço, Avaliações Recebidas e Dashboard de Reputação;
+– No caso de redes com várias unidades (franquias), o comerciante escolhe em qual filial vai cadastrar os produtos, o que evita confusão entre lojas da mesma rede;
+– O botão "Cadastrar Produto" saiu da listagem pública de produtos, onde aparecia para consumidores comuns. Agora essa ação só existe no painel do comerciante.
+2.6 Validação de Preços (Anti-fraude)
+Sem mecanismos de validação na publicação de preços, qualquer valor podia ser cadastrado sem checagem nenhuma, o que abria espaço para informações pouco confiáveis na plataforma.
+Melhorias implementadas:
+– O upload da foto da etiqueta de preço passou a ser obrigatório no cadastro, funcionando como comprovação visual do valor informado;
+– Foi integrado um leitor de código de barras pela câmera do dispositivo, com a biblioteca QuaggaJS, que vincula o produto ao código do fabricante automaticamente;
+– Foi adicionada uma validação de faixa de preço: quando o valor informado destoa muito da média histórica do produto (variação acima de 50%), o sistema mostra um alerta e pede confirmação do comerciante;
+– Para o futuro, está prevista a leitura automática de preço e código de barras direto da foto, via OCR e visão computacional.
+2.7 Cadastro de Produto — UX do Formulário
+O cadastro de produto tinha problemas de usabilidade no campo de preço. O incremento subia 1 centavo por clique (impraticável para preços altos), a validação misturava vírgula e ponto e quebrava o sistema, e não havia formatação automática.
+Melhorias implementadas:
+– O campo numérico padrão foi trocado por um input monetário com máscara automática: o usuário digita "1599" e o campo mostra "R$ 15,99", o que evita confusão entre vírgula e ponto;
+– Ao lado do campo de preço, há botões de incremento rápido ("+R$ 0,10", "+R$ 1,00" e "+R$ 10,00") para ajustes sem precisar digitar;
+– O sistema aceita vírgula e ponto como separador decimal, com normalização interna para o formato correto.
+2.8 Lista de Compras
+A lista de compras tinha duas limitações que atrapalhavam bastante: não dava para excluir um item específico (só a lista inteira) nem editar uma lista depois de criada.
+Melhorias implementadas:
+– Cada item agora tem um botão de exclusão individual (ícone de lixeira ao lado), com confirmação via tooltip antes de remover;
+– Foi adicionado um modo de edição: depois de criada, a lista permite alterar quantidades, renomear itens e mudar a ordem;
+– O fluxo de cadastro item-por-linha foi corrigido: vários itens digitados em linhas separadas agora são agrupados corretamente em uma única lista.
+2.9 Tela Inicial (Home)
+A home ficou marcada como "vazia" e sem hierarquia: as opções eram despejadas na tela sem priorização nenhuma, tanto para quem estava logado quanto para quem não estava.
+Melhorias implementadas:
+– A home foi redesenhada com um carrossel de destaques no topo (promoções, mercados bem avaliados, produtos populares), funcionando como ponto focal visual;
+– O grid de ações rápidas foi reorganizado por hierarquia: ações principais (Comparar Preços, Minha Lista, Mercados Próximos) em cards grandes no topo; ações secundárias (Ranking, Mapa, Cadastrar) em cards menores logo abaixo;
+– Depois do login, a home é personalizada: saudação ao usuário, resumo das listas recentes e sugestões com base no histórico, em vez de repetir todos os menus.
+2.10 Responsividade
+O layout mobile já funcionava em parte, mas algumas seções não estavam responsivas e quebravam em telas pequenas.
+Melhorias implementadas:
+– Os breakpoints CSS foram revisados para funcionar em smartphones (320px–480px), tablets (481px–768px) e desktops (769px+);
+– As tabelas de comparação de preços foram convertidas em cards empilhados nas telas pequenas, evitando scroll horizontal;
+– O menu hamburger foi ajustado para funcionar em todas as páginas, com animação suave de abertura e fechamento.
+2.11 Avaliações e Ranking
+A fórmula do ranking era simplista demais: não diferenciava um mercado com uma única avaliação 5 estrelas de outro com centenas de avaliações igualmente positivas.
+Melhorias implementadas:
+– O cálculo passou a usar média ponderada bayesiana, que leva em conta a nota média e o número de avaliações. Isso impede que mercados com pouquíssimas avaliações dominem o topo;
+– O número de avaliações aparece ao lado da nota média em todos os contextos (lista de mercados, ranking, cards), dando mais transparência ao usuário;
+– Empate na nota média é desfeito pelo número de avaliações, o que tira a ordenação alfabética acidental.
+2.12 Correção de Bugs
+Vários bugs menores foram apontados no review e corrigidos:
+– Botões "Voltar" que redirecionavam para a tela errada foram corrigidos;
+– Imagens antigas que estavam quebrando no banco passaram a ter fallback: quando a URL original falha, o sistema mostra um placeholder;
+– A validação no cadastro de conta foi reforçada no backend: campos obrigatórios são checados no frontend (HTML5 required + JavaScript) e no backend (Bean Validation do Spring), recusando campos nulos e e-mails inválidos.
+
+3 PARTE 2 — APLICAÇÃO DOS CONCEITOS-CHAVE DE IHC
+Nesta seção, cada melhoria descrita na Parte 1 é ligada aos conceitos de Interação Humano-Computador exigidos pelo trabalho: Interação, Affordance, Interface e Qualidade de Uso. As justificativas se apoiam em Nielsen (1994), Norman (2013) e nas diretrizes WCAG 2.1.
+3.1 Interação
+3.1.1 Definição de fluxos de tarefas do usuário
+A separação de perfis (seção 2.5) redesenhou os fluxos de tarefas da plataforma. Antes existia um único fluxo genérico, em que qualquer usuário podia executar qualquer ação. Agora há dois fluxos distintos e bem definidos:
+Fluxo do Consumidor:
+Home → Buscar Produtos → Comparar Preços → Adicionar à Lista → Otimizar Lista → Plano de Compras. Cada etapa é sequencial e dá feedback visual nas transições (loading spinner, toast de confirmação).
+Fluxo do Comerciante:
+Login (CNPJ) → Painel do Comércio → Selecionar Mercado → Cadastrar Produto + Foto da Etiqueta → Publicar Preço → Acompanhar Avaliações. O fluxo é guiado: cada etapa indica qual é a próxima ação.
+Essa reestruturação dialoga com os "Sete Estágios da Ação" de Norman (2013): o usuário sempre sabe onde está, o que pode fazer e como fazê-lo. O ciclo ação-feedback fica explícito em cada transição, conforme recomendam Preece, Rogers e Sharp (2013).
+3.1.2 Ciclos de ação e feedback
+Toda ação do usuário na plataforma agora produz uma resposta visível e imediata do sistema:
+– Cadastro de produto com foto: ao subir a etiqueta, o sistema mostra preview da imagem, barra de progresso e confirmação visual (toast verde "Produto cadastrado com sucesso") — ciclo completo de ação → feedback;
+– Validação de preço fora da faixa: se o comerciante informa um preço 50% acima da média, o sistema mostra um alerta amarelo com a média histórica e pede confirmação. É um feedback preventivo, que interrompe o ciclo para evitar erro;
+– Busca no mapa: ao digitar uma cidade ou bairro, o sistema mostra sugestões em tempo real (autocomplete). Quando o usuário seleciona uma opção, o mapa anima até a nova localização e os marcadores aparecem aos poucos — feedback contínuo durante toda a interação;
+– Exclusão de item da lista: ao clicar na lixeira, aparece um tooltip de confirmação "Remover item?" com opções Sim/Não, seguido de animação de remoção e toast informativo. É um feedback que ajuda a evitar erros irreversíveis.
+3.1.3 Respostas visíveis do sistema
+A melhoria de navegação (seção 2.3) é um bom exemplo de respostas visíveis: o botão de voltar em todas as telas funciona como uma "saída de emergência" visível (Heurística 3 de Nielsen), e o destaque do link ativo no header indica em que ponto da hierarquia o usuário está (Heurística 1 — Visibilidade do Status).
+Os spinners de loading durante operações assíncronas e os toasts contextuais (verde para sucesso, vermelho para erro, amarelo para aviso) impedem que o sistema fique em silêncio durante uma interação. Esse é um princípio básico de design de interação segundo Cooper et al. (2014).
+3.2 Affordance
+3.2.1 Elementos que indicam claramente sua função
+O conceito de affordance, como Norman (2013) o define, diz respeito às propriedades percebidas de um objeto que indicam como ele pode ser usado. As melhorias reforçam as affordances da interface em vários pontos:
+– Botão "Voltar" com ícone de seta (←) + texto: a junção de ícone direcional com rótulo textual cria uma affordance dupla. O ícone sugere direção/movimento, o texto confirma a ação. É mais eficaz do que o ícone isolado, que pode ser ambíguo;
+– Botões de incremento de preço ("+R$ 0,10", "+R$ 1,00", "+R$ 10,00"): o sinal de mais (+) e o valor monetário comunicam de cara o que o botão faz. A forma retangular com borda e cor de destaque reforça a affordance de "clicável";
+– Ícone de lixeira para excluir item: a metáfora visual da lixeira é universalmente reconhecida como "remover" e dispensa rótulo. A cor vermelha reforça a semântica de ação destrutiva;
+– Campo de busca no mapa com ícone de lupa e placeholder "Buscar cidade ou bairro...": ícone + placeholder textual deixam evidente que ali se faz pesquisa, seguindo convenções de UI já consolidadas.
+3.2.2 Eliminação de falsas affordances
+O redesign da home (seção 2.9) tirou as falsas affordances apontadas no review:
+– Cards informativos que pareciam clicáveis sem ser: agora só os cards que de fato são clicáveis ganham estado hover (elevação de sombra + cursor pointer). Os puramente informativos não têm efeito hover;
+– Botão "Cadastrar Produto" saiu da lista pública: ele era uma falsa affordance para consumidores, pois sugeria que eles podiam cadastrar produtos em qualquer mercado, quando na prática a ação cabe ao comerciante;
+– Textos sublinhados que não eram links foram trocados por bold ou itálico. O sublinhado ficou reservado só para hyperlinks reais.
+3.2.3 Cores, formas e metáforas visuais
+A revisão da paleta (seção 2.2) usa as cores como signifiers (Norman, 2013), comunicando significado:
+– Verde (#28A745) para confirmar e sinalizar sucesso: botões "Salvar", "Cadastrar", toasts de sucesso;
+– Vermelho (#E03C3C) para ações destrutivas e alertas: botão "Excluir", preços em destaque, mensagens de erro;
+– Roxo (#7C3AED) para ações primárias e navegação: botão de ação principal, links do header, estados ativos;
+– Amarelo (#F5A623) para avisos e destaques: alertas de preço fora da faixa, estrelas de avaliação, badges de destaque.
+Essa codificação cromática se apoia no princípio de mapeamento natural (Norman, 2013): vermelho e verde carregam significados culturalmente assentados (perigo/parar e seguro/prosseguir), o que reduz a carga cognitiva do usuário.
+3.3 Interface
+3.3.1 Consistência visual e semântica
+A padronização tipográfica (2.1) e a correção de contraste (2.2) trazem consistência visual para toda a aplicação. Os elementos seguem um Design System definido com tokens CSS:
+– A mesma fonte (Poppins) é usada em todos os contextos, com hierarquia de pesos consistente;
+– O esquema de cores se repete em todos os componentes: botões primários sempre roxos, ações destrutivas sempre vermelhas, feedback de sucesso sempre verde;
+– Os espaçamentos seguem um grid de 8px (8px, 16px, 24px, 32px), o que dá ritmo visual uniforme;
+– Componentes reutilizáveis (cards, modais, toasts, formulários) têm aparência e comportamento idênticos em todas as páginas.
+Essa consistência atende à Heurística 4 de Nielsen (1994) — Consistência e Padrões — segundo a qual o usuário não deveria precisar se perguntar se palavras, situações ou ações diferentes significam a mesma coisa.
+3.3.2 Organização lógica e hierarquia visual
+O redesign da home (seção 2.9) implementa uma hierarquia visual com três níveis de importância:
+– Nível 1 (destaque máximo): carrossel de destaques no topo, com imagens grandes ocupando 100% da largura. Captura a atenção imediata do usuário;
+– Nível 2 (ações principais): cards grandes de Comparar Preços, Minha Lista e Mercados Próximos, logo abaixo do carrossel. As tarefas mais frequentes ficam mais acessíveis;
+– Nível 3 (ações secundárias): cards menores de Ranking, Mapa e outras funcionalidades, posicionados mais abaixo. Continuam disponíveis, mas sem competir pela atenção.
+Essa organização dialoga com a Lei de Fitts e com o princípio de proximidade da Gestalt: elementos relacionados ficam próximos visualmente, e as ações mais importantes são maiores e mais perto do ponto inicial de atenção.
+3.3.3 Padrões de design reconhecíveis
+As melhorias adotam convenções de UI já familiares aos usuários:
+– Login em layout split-screen (formulário à esquerda, imagem à direita), padrão comum em aplicações web modernas;
+– Menu hamburger (☰) para navegação mobile, convenção universal em telas pequenas;
+– Sistema de estrelas (1 a 5) para avaliações, padrão consolidado desde plataformas como Amazon e Google Maps;
+– Campo de busca com ícone de lupa no canto superior, posição e iconografia padronizadas na web;
+– Botão flutuante (FAB) para ações primárias no mobile, convenção do Material Design.
+3.4 Qualidade de Uso
+3.4.1 Eficiência
+Eficiência tem a ver com o número mínimo de ações para completar uma tarefa. As melhorias reduzem bastante o esforço do usuário:
+– Campo de preço com máscara automática (seção 2.7): o usuário digita só os números ("1599") e o sistema formata para "R$ 15,99". Não precisa mais digitar "R$", vírgula nem posicionar o cursor — a tarefa cai de 6+ ações para 4 dígitos;
+– Geolocalização automática no mapa (seção 2.4): tira a etapa manual de procurar a própria localização, o que economiza 3 ou 4 interações (abrir busca, digitar cidade, selecionar, confirmar);
+– Leitor de código de barras pela câmera (seção 2.6): apontando para o produto, o sistema preenche nome, marca e categoria sozinho — 3 campos a menos para digitar manualmente;
+– Botão "Ver detalhes" direto no popup do mapa (seção 2.4): chega ao mercado em 1 clique, contra 3+ pelo fluxo de navegação tradicional.
+3.4.2 Eficácia
+Eficácia diz respeito à capacidade de o usuário concluir as tarefas corretamente. As melhorias retiram ambiguidades do caminho:
+– Separação de perfis (seção 2.5): tira o risco de consumidores cadastrarem preços falsos por engano. Agora a tarefa "informar preço" só pode ser feita por quem tem legitimidade (comerciante verificado);
+– Validação de preço com alerta de faixa (seção 2.6): se um valor fora do padrão é informado, o sistema pede confirmação antes de salvar. O usuário tem a chance de corrigir um erro de digitação antes que ele vire dado errado no banco;
+– Máscara de preço aceitando vírgula e ponto (seção 2.7): elimina os erros de formato que antes quebravam o sistema. Os preços informados são processados corretamente.
+3.4.3 Satisfação
+Satisfação tem a ver com a experiência ser fluida e sem frustrações:
+– Tipografia legível (seção 2.1): a troca da fonte "estilosa" pela Poppins resolve a frustração de leitura apontada no review, sobretudo para o público com dificuldade visual;
+– Contraste adequado (seção 2.2): a saída dos textos cinza-claro sobre fundo claro tira a frustração do "não consigo enxergar" e torna a leitura confortável em qualquer condição de iluminação;
+– Home redesenhada (seção 2.9): o carrossel de destaques e a organização por prioridade dão à tela inicial uma cara mais orientada e menos "vazia", que era o sentimento reportado;
+– Feedback a cada ação (toasts, loading, animações): o usuário não fica "no vácuo" esperando sem saber se o sistema registrou a ação. Isso reduz ansiedade e aumenta a confiança na plataforma.
+3.4.4 Acessibilidade
+As melhorias de acessibilidade seguem a WCAG 2.1, com foco nos níveis AA e AAA:
+– Contraste de cores (seção 2.2): razão mínima de 7:1 para texto normal e 4.5:1 para texto grande, o que atende ao nível AAA da WCAG 2.1, critério 1.4.6;
+– Responsividade completa (seção 2.10): layout adaptável de 320px a 1920px. Atende ao critério 1.4.10 (Reflow) da WCAG 2.1: o conteúdo é acessível sem scroll horizontal em 320px;
+– Navegação por teclado: todos os elementos interativos (botões, links, campos, modais) respondem a Tab/Shift+Tab, com indicadores visuais de foco (outline roxo de 2px). Atende ao critério 2.1.1 (Keyboard) da WCAG;
+– Textos alternativos em todas as imagens de produtos e screenshots, em conformidade com o critério 1.1.1 (Non-text Content) da WCAG;
+– Atributos ARIA nos componentes dinâmicos: modais (role="dialog", aria-modal), toasts (role="alert") e menus (aria-expanded), o que dá compatibilidade com leitores de tela.
+
+4 QUADRO RESUMO — MELHORIAS E CONCEITOS APLICADOS
+O quadro a seguir resume a relação entre cada melhoria da Parte 1 e os conceitos de IHC aplicados na Parte 2, ajudando a visualizar a cobertura dos requisitos do trabalho.
+
+
+5 CONCLUSÃO
+As melhorias descritas neste trabalho representam um avanço importante na qualidade da interface e da experiência do usuário do MercadoCerto. Cada feedback recebido na avaliação do Trabalho 1 foi avaliado e virou ação concreta, com base nos princípios de IHC vistos em sala.
+O conceito de Interação ajudou a redesenhar os fluxos de tarefas com ciclos claros de ação e feedback, de modo que o sistema responde visivelmente às ações do usuário. O conceito de Affordance orientou o redesign dos elementos para que comuniquem sua função, eliminando falsas affordances e usando metáforas visuais culturalmente assentadas.
+Na Interface, as melhorias de tipografia, contraste e organização visual trouxeram mais consistência e legibilidade, com padrões de design familiares que reduzem a curva de aprendizagem. Em Qualidade de Uso, há ganhos nos quatro critérios: eficiência (menos ações por tarefa), eficácia (tarefas concluídas corretamente), satisfação (experiência fluida e sem frustrações) e acessibilidade (conformidade WCAG 2.1 nível AA/AAA).
+O quadro resumo da seção 4 mostra que cada melhoria está ancorada em pelo menos um conceito de IHC, e que os quatro conceitos foram aplicados ao longo do projeto. A abordagem reforça a proposta de desenvolver interfaces centradas no usuário.
+
+REFERÊNCIAS
+COOPER, Alan et al. About Face: The Essentials of Interaction Design. 4th ed. Indianapolis: Wiley, 2014.
+KRUG, Steve. Don’t Make Me Think, Revisited: A Common Sense Approach to Web Usability. 3rd ed. Berkeley: New Riders, 2014.
+NIELSEN, Jakob. 10 Usability Heuristics for User Interface Design. Nielsen Norman Group, 1994. Disponível em: https://www.nngroup.com/articles/ten-usability-heuristics/. Acesso em: 24 abr. 2026.
+NORMAN, Donald A. The Design of Everyday Things. Revised and Expanded Edition. New York: Basic Books, 2013.
+PREECE, Jennifer; ROGERS, Yvonne; SHARP, Helen. Design de Interação: além da interação humano-computador. 3. ed. Porto Alegre: Bookman, 2013.
+W3C. Web Content Accessibility Guidelines (WCAG) 2.1. World Wide Web Consortium, 2018. Disponível em: https://www.w3.org/TR/WCAG21/. Acesso em: 24 abr. 2026.
+
+
+=== TABELAS ===
+
+
+--- Tabela 1 ---
+Melhoria | Interação | Affordance | Interface | Qualidade de Uso
+2.1 Tipografia |  |  | ✓ | Satisfação, Acessibilidade
+2.2 Contraste e Cores |  | ✓ | ✓ | Satisfação, Acessibilidade
+2.3 Navegação / Voltar | ✓ | ✓ | ✓ | Eficiência
+2.4 Mapa Interativo | ✓ | ✓ |  | Eficiência
+2.5 Separação de Perfis | ✓ | ✓ | ✓ | Eficácia
+2.6 Validação Anti-fraude | ✓ |  |  | Eficácia
+2.7 UX do Formulário | ✓ | ✓ |  | Eficiência, Eficácia
+2.8 Lista de Compras | ✓ | ✓ |  | Eficiência
+2.9 Home Redesign |  | ✓ | ✓ | Satisfação
+2.10 Responsividade |  |  | ✓ | Acessibilidade
+2.11 Ranking | ✓ |  | ✓ | Eficácia
+2.12 Correção de Bugs | ✓ |  |  | Eficácia

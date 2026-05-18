@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Painel do Comércio — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px}
+    .stat-card{background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid rgba(0,0,0,.06);box-shadow:var(--shadow-sm)}
+    .stat-label{font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+    .stat-value{font-family:var(--font-head);font-size:28px;font-weight:800;color:var(--ink)}
+    .stat-value.purple{color:#7c3aed}
+    .tab-row{display:flex;gap:0;border-bottom:1px solid var(--surface-3);margin-bottom:24px}
+    .ptab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--ink-soft);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s}
+    .ptab:hover{color:var(--ink)}
+    .ptab.on{color:#7c3aed;border-bottom-color:#7c3aed}
+    .ppanel{display:none}.ppanel.on{display:block}
+    .av-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;border:1px solid rgba(0,0,0,.06);margin-bottom:10px}
+    .av-stars{color:#f5a623;font-size:16px;margin-bottom:4px}
+    .av-text{font-size:13px;color:var(--ink-mid);line-height:1.5}
+    .av-date{font-size:11px;color:var(--ink-soft);margin-top:6px}
+    /* Catalog rows */
+    .cat-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--surface-3)}
+    .cat-row:last-child{border-bottom:none}
+    .cat-row-info{flex:1;min-width:0}
+    .cat-row-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cat-row-meta{font-size:12px;color:var(--ink-soft);margin-top:2px}
+    .cat-row-price{font-family:var(--font-head);font-size:18px;font-weight:800;color:#7c3aed;white-space:nowrap}
+    .cat-row-actions{display:flex;gap:6px;flex-shrink:0}
+    /* Inline edit form */
+    .inline-edit{background:var(--green-light);border-radius:var(--radius-sm);padding:12px;margin-top:6px;display:none}
+    .inline-edit.open{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    /* Add product form */
+    .add-form{background:var(--surface-3);border-radius:var(--radius);padding:20px;margin-bottom:24px}
+  </style>
+</head>
+<body>
+<header class="header" id="main-header"></header>
+
+<main class="page">
+  <div class="container" style="padding-top:24px;padding-bottom:48px">
+
+    <!-- TOPO DO PAINEL -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px">
+      <div>
+        <h1 class="page-title" id="nome-mercado">Carregando...</h1>
+        <p class="page-subtitle">Painel de gestão do comércio</p>
+      </div>
+      <select class="form-select" id="sel-mercado" style="max-width:260px">
+        <option value="">Selecione seu mercado</option>
+      </select>
+    </div>
+
+    <!-- STATS -->
+    <div class="stat-grid" id="stats" style="display:none">
+      <div class="stat-card">
+        <div class="stat-label">Nota média</div>
+        <div class="stat-value purple" id="stat-nota">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avaliações recebidas</div>
+        <div class="stat-value" id="stat-aval">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Produtos no catálogo</div>
+        <div class="stat-value" id="stat-prod">—</div>
+      </div>
+    </div>
+
+    <!-- ABAS -->
+    <div id="abas" style="display:none">
+      <div class="tab-row">
+        <button class="ptab on" onclick="pTab('reputacao',this)">Reputação</button>
+        <button class="ptab" onclick="pTab('catalogo',this)">Catálogo & Preços</button>
+        <button class="ptab" onclick="pTab('avaliacoes',this)">Avaliações</button>
+        <button class="ptab" onclick="pTab('editar',this)">Editar Dados</button>
+      </div>
+
+      <!-- REPUTAÇÃO -->
+      <div class="ppanel on" id="pp-reputacao">
+        <div class="card">
+          <h3 style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:4px">Evolução da nota mensal</h3>
+          <p class="text-muted" style="font-size:12px;margin-bottom:16px">Média das avaliações recebidas por mês</p>
+          <canvas id="chart-rep" height="90"></canvas>
+          <div id="rep-empty" style="display:none;text-align:center;padding:32px;color:var(--ink-soft);font-size:13px">
+            Nenhuma avaliação ainda. Compartilhe o link do seu mercado para receber as primeiras notas!
+          </div>
+        </div>
+      </div>
+
+      <!-- CATÁLOGO & PREÇOS (unificado) -->
+      <div class="ppanel" id="pp-catalogo">
+
+        <!-- Formulário: adicionar produto ao catálogo -->
+        <div class="add-form">
+          <h3 style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:14px">
+            Adicionar / Atualizar Preço
+          </h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="flex:2;min-width:200px;margin-bottom:0">
+              <label class="form-label">Produto <span class="req">*</span></label>
+              <select class="form-select" id="pub-produto">
+                <option value="">Selecione o produto...</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;min-width:130px;margin-bottom:0">
+              <label class="form-label">Preço (R$) <span class="req">*</span></label>
+              <input class="form-input" type="number" id="pub-valor" step="0.01" min="0.01" placeholder="Ex: 9.90"/>
+            </div>
+            <button class="btn btn-primary" id="btn-publicar" style="height:42px;margin-bottom:0">
+              Publicar
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de produtos do catálogo -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="font-family:var(--font-head);font-size:16px;font-weight:700">Produtos no catálogo</h3>
+            <span id="cat-count" style="font-size:12px;color:var(--ink-soft)"></span>
+          </div>
+          <div id="lista-catalogo">
+            <div class="loading-center"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AVALIAÇÕES -->
+      <div class="ppanel" id="pp-avaliacoes">
+        <div id="lista-avaliacoes">
+          <div class="loading-center"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- EDITAR DADOS DO MERCADO -->
+      <div class="ppanel" id="pp-editar">
+        <div class="card">
+          <h3 style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:4px">Editar dados do mercado</h3>
+          <p class="text-muted" style="font-size:12px;margin-bottom:20px">Corrija qualquer informação cadastrada incorretamente</p>
+
+          <form id="form-editar-mercado" novalidate>
+
+            <!-- Foto atual + trocar foto -->
+            <div class="form-group">
+              <label class="form-label">Foto do Mercado</label>
+
+              <!-- Área clicável para selecionar foto -->
+              <label for="edit-foto-input" class="upload-area" id="edit-foto-area">
+                <!-- Preview da foto atual / selecionada -->
+                <img id="edit-foto-img" src="" alt="Foto" class="upload-area-preview" style="display:none;"/>
+
+                <!-- Placeholder quando não tem foto -->
+                <div id="edit-foto-placeholder" class="upload-area-placeholder">
+                  <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>
+                  <div class="upload-area-title">Clique para enviar uma foto</div>
+                  <div class="upload-area-sub">JPG, PNG ou WebP — máximo 5 MB</div>
+                </div>
+
+                <!-- Overlay com ícone quando já tem foto (hover) -->
+                <div class="upload-area-overlay">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <div style="font-size:13px;font-weight:600;margin-top:6px;">Trocar foto</div>
+                </div>
+              </label>
+
+              <input type="file" id="edit-foto-input" accept="image/jpeg,image/png,image/webp" style="display:none;"/>
+
+              <button type="button" id="btn-remover-foto" class="btn btn-ghost" style="display:none;margin-top:8px;font-size:13px;padding:6px 12px;">
+                Remover foto selecionada
+              </button>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-nome">Nome do Mercado <span class="req">*</span></label>
+              <input class="form-input" id="edit-nome" type="text" placeholder="Ex: Supermercado Bom Preço"/>
+              <div class="field-error" id="err-nome" style="display:none;color:#ef4444;font-size:12px;margin-top:4px;"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-endereco">Endereço <span class="req">*</span></label>
+              <input class="form-input" id="edit-endereco" type="text" placeholder="Ex: Rua das Flores, 123 - Centro"/>
+              <div class="field-error" id="err-endereco" style="display:none;color:#ef4444;font-size:12px;margin-top:4px;"></div>
+            </div>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <div class="form-group" style="flex:1;min-width:160px;">
+                <label class="form-label" for="edit-cidade">Cidade <span class="req">*</span></label>
+                <input class="form-input" id="edit-cidade" type="text" placeholder="Ex: São Paulo"/>
+                <div class="field-error" id="err-cidade" style="display:none;color:#ef4444;font-size:12px;margin-top:4px;"></div>
+              </div>
+              <div class="form-group" style="max-width:130px;">
+                <label class="form-label" for="edit-cep">CEP</label>
+                <input class="form-input" id="edit-cep" type="text" placeholder="00000-000" maxlength="9"/>
+                <div class="field-error" id="err-cep" style="display:none;color:#ef4444;font-size:12px;margin-top:4px;"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary" id="btn-salvar-edicao">Salvar alterações</button>
+              <button type="button" class="btn btn-ghost" id="btn-cancelar-edicao">Cancelar</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- empty state -->
+    <div id="empty-inicial" class="empty-state">
+      <div class="empty-state-icon">🏪</div>
+      <div class="empty-state-title">Selecione seu mercado</div>
+      <div class="empty-state-text">Escolha o mercado que você gerencia para ver o painel</div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+if (!requireComercio()) { throw new Error('Acesso negado'); }
+
+if (isAdmin()) {
+  const banner = document.createElement('div');
+  banner.style.cssText = 'background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:var(--radius);padding:14px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;';
+  banner.innerHTML = '<div><span style="font-family:var(--font-head);font-weight:700;">Modo Administrador</span> — visualizando painel dos comércios</div>' +
+    '<a href="dashboard.html" style="background:#fff;color:#7c3aed;font-weight:700;padding:7px 16px;border-radius:var(--radius-sm);text-decoration:none;font-size:13px;">← Visão do Consumidor</a>';
+  document.querySelector('.container').prepend(banner);
+}
+
+let idMercadoAtual = null;
+let chartRep = null;
+let catalogoData = [];
+let mercadosSalvos = {};
+
+// ── Carregar mercados ──────────────────────────────────────────────
+async function carregarMercados() {
+  const res  = await fetch(`${API}/api/mercados`);
+  const list = await res.json();
+  const sel  = document.getElementById('sel-mercado');
+  list.forEach(m => {
+    mercadosSalvos[m.idMercado] = m;
+    const opt = document.createElement('option');
+    opt.value = m.idMercado;
+    opt.textContent = m.nomeMercado;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('sel-mercado').addEventListener('change', async function() {
+  if (!this.value) return;
+  idMercadoAtual = parseInt(this.value);
+  document.getElementById('nome-mercado').textContent = this.options[this.selectedIndex].text;
+  document.getElementById('empty-inicial').style.display = 'none';
+  document.getElementById('stats').style.display  = 'grid';
+  document.getElementById('abas').style.display   = 'block';
+  await carregarDashboard(idMercadoAtual);
+  await carregarCatalogo(idMercadoAtual);
+  await carregarAvaliacoes(idMercadoAtual);
+  await carregarProdutosSelect();
+});
+
+// ── Dashboard ──────────────────────────────────────────────────────
+async function carregarDashboard(idMercado) {
+  const res  = await fetch(`${API}/api/painel/dashboard/${idMercado}`);
+  const data = await res.json();
+
+  document.getElementById('stat-nota').textContent = data.mediaGeral ? data.mediaGeral.toFixed(1) : '—';
+  document.getElementById('stat-aval').textContent = data.totalAvaliacoes ?? '0';
+  document.getElementById('stat-prod').textContent = data.totalProdutos  ?? '0';
+
+  const evolucao = data.evolucaoMensal || [];
+  const canvas   = document.getElementById('chart-rep');
+  const empty    = document.getElementById('rep-empty');
+
+  if (!evolucao.length) {
+    empty.style.display  = 'block';
+    canvas.style.display = 'none';
+    return;
+  }
+  empty.style.display  = 'none';
+  canvas.style.display = 'block';
+
+  if (chartRep) chartRep.destroy();
+  chartRep = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: evolucao.map(e => e.mes),
+      datasets: [{
+        label: 'Nota média',
+        data: evolucao.map(e => e.mediaMes),
+        backgroundColor: 'rgba(107,34,243,.7)',
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 5, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Catálogo ──────────────────────────────────────────────────────
+async function carregarCatalogo(idMercado) {
+  const [resPrecos, resProdutos] = await Promise.all([
+    fetch(`${API}/api/precos/mercado/${idMercado}`),
+    fetch(`${API}/api/produtos`)
+  ]);
+  const precos   = await resPrecos.json();
+  const produtos = await resProdutos.json();
+  const mapa     = Object.fromEntries(produtos.map(p => [p.idProduto, p]));
+  const cont     = document.getElementById('lista-catalogo');
+  const count    = document.getElementById('cat-count');
+
+  catalogoData = precos.map(p => ({ preco: p, produto: mapa[p.idProduto] || {} }));
+  count.textContent = `${precos.length} produto${precos.length !== 1 ? 's' : ''}`;
+
+  if (!precos.length) {
+    cont.innerHTML = '<p class="text-muted">Nenhum preço publicado ainda. Use o formulário acima para começar.</p>';
+    return;
+  }
+
+  cont.innerHTML = '';
+  catalogoData.forEach(({ preco: p, produto: prod }) => {
+    const div = document.createElement('div');
+    div.id = `cat-item-${p.idPreco}`;
+    div.innerHTML = `
+      <div class="cat-row">
+        <div class="cat-row-info">
+          <div class="cat-row-name">${prod.nomeProduto || 'Produto #' + p.idProduto}</div>
+          <div class="cat-row-meta">${prod.categoria || ''} · ${prod.marca || ''}${prod.peso ? ' · ' + prod.peso + (prod.unidade || '') : ''}</div>
+        </div>
+        <div class="cat-row-price">R$ ${Number(p.valor).toFixed(2)}</div>
+        <div class="cat-row-actions">
+          <button class="btn btn-secondary" style="padding:6px 12px;font-size:12px"
+            onclick="toggleEdit(${p.idPreco}, ${p.idProduto})">Editar</button>
+          <button class="btn btn-danger" style="padding:6px 12px;font-size:12px"
+            onclick="removerDoCatalogo(${p.idPreco}, '${(prod.nomeProduto || '').replace(/'/g,"\\'")}')">Remover</button>
+        </div>
+      </div>
+      <div class="inline-edit" id="edit-${p.idPreco}">
+        <input class="form-input" type="number" step="0.01" min="0.01"
+          id="edit-val-${p.idPreco}" value="${Number(p.valor).toFixed(2)}"
+          style="width:120px;padding:8px 10px"/>
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:13px"
+          onclick="salvarEdicao(${p.idPreco}, ${p.idProduto})">Salvar</button>
+        <button class="btn btn-ghost" style="padding:8px 12px;font-size:13px"
+          onclick="toggleEdit(${p.idPreco})">Cancelar</button>
+      </div>`;
+    cont.appendChild(div);
+  });
+}
+
+function toggleEdit(idPreco, idProduto) {
+  const editDiv = document.getElementById(`edit-${idPreco}`);
+  editDiv.classList.toggle('open');
+}
+
+async function salvarEdicao(idPreco, idProduto) {
+  const valor = parseFloat(document.getElementById(`edit-val-${idPreco}`).value);
+  if (!valor || valor <= 0) { toast('Informe um preço válido', 'error'); return; }
+
+  try {
+    const res = await fetch(`${API}/api/precos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idProduto, idMercado: idMercadoAtual, valor })
+    });
+    if (res.ok) {
+      toast('Preço atualizado!', 'success');
+      await carregarCatalogo(idMercadoAtual);
+      await carregarDashboard(idMercadoAtual);
+    } else {
+      toast('Erro ao atualizar preço', 'error');
+    }
+  } catch { toast('Erro de conexão', 'error'); }
+}
+
+async function removerDoCatalogo(idPreco, nomeProduto) {
+  if (!confirm(`Remover "${nomeProduto}" do catálogo?`)) return;
+  try {
+    const res = await fetch(`${API}/api/precos/${idPreco}`, { method: 'DELETE' });
+    if (res.ok) {
+      toast('Produto removido do catálogo', 'success');
+      await carregarCatalogo(idMercadoAtual);
+      await carregarDashboard(idMercadoAtual);
+    } else {
+      toast('Erro ao remover produto', 'error');
+    }
+  } catch { toast('Erro de conexão', 'error'); }
+}
+
+// ── Avaliações ────────────────────────────────────────────────────
+async function carregarAvaliacoes(idMercado) {
+  const res  = await fetch(`${API}/api/avaliacoes/mercado/${idMercado}`);
+  const list = await res.json();
+  const cont = document.getElementById('lista-avaliacoes');
+
+  if (!list.length) {
+    cont.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⭐</div><div class="empty-state-title">Nenhuma avaliação ainda</div></div>';
+    return;
+  }
+
+  cont.innerHTML = [...list].reverse().map(a => `
+    <div class="av-card">
+      <div class="av-stars">${'★'.repeat(a.nota)}${'☆'.repeat(5-a.nota)}</div>
+      <div class="av-text">${a.comentario || '<em style="color:var(--ink-soft)">Sem comentário</em>'}</div>
+      <div class="av-date">${a.dataAvaliacao ? new Date(a.dataAvaliacao).toLocaleDateString('pt-BR') : ''}</div>
+    </div>`).join('');
+}
+
+// ── Publicar preço ────────────────────────────────────────────────
+async function carregarProdutosSelect() {
+  const res  = await fetch(`${API}/api/produtos`);
+  const list = await res.json();
+  const sel  = document.getElementById('pub-produto');
+  sel.innerHTML = '<option value="">Selecione o produto...</option>';
+  list.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.idProduto;
+    opt.textContent = `${p.nomeProduto} — ${p.marca}${p.peso ? ' (' + p.peso + (p.unidade || '') + ')' : ''}`;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('btn-publicar').addEventListener('click', async () => {
+  const idProduto = parseInt(document.getElementById('pub-produto').value);
+  const valor     = parseFloat(document.getElementById('pub-valor').value);
+
+  if (!idProduto) { toast('Selecione um produto', 'error'); return; }
+  if (!valor || valor <= 0) { toast('Informe um preço válido', 'error'); return; }
+  if (!idMercadoAtual) { toast('Selecione seu mercado', 'error'); return; }
+
+  const btn = document.getElementById('btn-publicar');
+  setLoading(btn, true);
+  try {
+    const res = await fetch(`${API}/api/precos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idProduto, idMercado: idMercadoAtual, valor })
+    });
+    if (res.ok) {
+      toast('Preço publicado com sucesso!', 'success');
+      document.getElementById('pub-produto').value = '';
+      document.getElementById('pub-valor').value   = '';
+      await carregarCatalogo(idMercadoAtual);
+      await carregarDashboard(idMercadoAtual);
+    } else {
+      toast('Erro ao publicar preço', 'error');
+    }
+  } catch { toast('Erro de conexão', 'error'); }
+  finally { setLoading(btn, false); }
+});
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function pTab(id, el) {
+  document.querySelectorAll('.ppanel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('on'));
+  document.getElementById('pp-' + id).classList.add('on');
+  el.classList.add('on');
+  if (id === 'editar') preencherFormEdicao();
+}
+
+// ── Editar dados do mercado ────────────────────────────────────────
+function preencherFormEdicao() {
+  if (!idMercadoAtual) return;
+  const m = mercadosSalvos[idMercadoAtual];
+  if (!m) return;
+
+  let endBase = m.endereco || '';
+  let cepVal  = '';
+  const cepMatch = endBase.match(/\s*-?\s*CEP:\s*([\d]{5}-?[\d]{3})/i);
+  if (cepMatch) {
+    cepVal  = cepMatch[1];
+    endBase = endBase.replace(cepMatch[0], '').trim();
+  }
+
+  document.getElementById('edit-nome').value     = m.nomeMercado || '';
+  document.getElementById('edit-endereco').value = endBase;
+  document.getElementById('edit-cidade').value   = m.cidade || '';
+  document.getElementById('edit-cep').value      = cepVal;
+  document.getElementById('edit-foto-input').value = '';
+  document.getElementById('btn-remover-foto').style.display = 'none';
+
+  const fotoArea = document.getElementById('edit-foto-area');
+  const fotoImg  = document.getElementById('edit-foto-img');
+  if (m.foto) {
+    fotoImg.src = `${API}/uploads/${m.foto}`;
+    fotoImg.style.display = 'block';
+    fotoArea.classList.add('has-preview');
+  } else {
+    fotoImg.src = '';
+    fotoImg.style.display = 'none';
+    fotoArea.classList.remove('has-preview');
+  }
+
+  limparErrosEdicao();
+}
+
+function limparErrosEdicao() {
+  ['nome','endereco','cidade','cep'].forEach(f => {
+    const el = document.getElementById('err-' + f);
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+    const inp = document.getElementById('edit-' + f);
+    if (inp) inp.classList.remove('input-error');
+  });
+}
+
+function mostrarErro(campo, msg) {
+  const el = document.getElementById('err-' + campo);
+  const inp = document.getElementById('edit-' + campo);
+  if (el)  { el.textContent = msg; el.style.display = 'block'; }
+  if (inp) inp.classList.add('input-error');
+}
+
+function validarFormEdicao() {
+  limparErrosEdicao();
+  let ok = true;
+
+  const nome = document.getElementById('edit-nome').value.trim();
+  if (!nome) {
+    mostrarErro('nome', 'O nome do mercado é obrigatório.'); ok = false;
+  } else if (nome.length < 3) {
+    mostrarErro('nome', 'O nome deve ter pelo menos 3 caracteres.'); ok = false;
+  }
+
+  const endereco = document.getElementById('edit-endereco').value.trim();
+  if (!endereco) {
+    mostrarErro('endereco', 'O endereço é obrigatório.'); ok = false;
+  }
+
+  const cidade = document.getElementById('edit-cidade').value.trim();
+  if (!cidade) {
+    mostrarErro('cidade', 'A cidade é obrigatória.'); ok = false;
+  }
+
+  const cep = document.getElementById('edit-cep').value.trim();
+  if (cep && !/^\d{5}-?\d{3}$/.test(cep)) {
+    mostrarErro('cep', 'CEP inválido. Use o formato 00000-000.'); ok = false;
+  }
+
+  return ok;
+}
+
+// Prévia de nova foto ao selecionar
+document.getElementById('edit-foto-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('A foto deve ter no máximo 5 MB', 'error');
+    this.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const fotoImg  = document.getElementById('edit-foto-img');
+    const fotoArea = document.getElementById('edit-foto-area');
+    fotoImg.src = e.target.result;
+    fotoImg.style.display = 'block';
+    fotoArea.classList.add('has-preview');
+    document.getElementById('btn-remover-foto').style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+});
+
+// Drag and drop na área de upload
+(function() {
+  const area = document.getElementById('edit-foto-area');
+  const input = document.getElementById('edit-foto-input');
+  if (!area || !input) return;
+
+  ['dragenter','dragover'].forEach(ev => area.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation();
+    area.classList.add('dragover');
+  }));
+  ['dragleave','drop'].forEach(ev => area.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation();
+    area.classList.remove('dragover');
+  }));
+  area.addEventListener('drop', e => {
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!/^image\/(jpe?g|png|webp)$/.test(file.type)) {
+      toast('Use JPG, PNG ou WebP', 'error');
+      return;
+    }
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  });
+})();
+
+// Remover foto selecionada (volta pro estado anterior)
+document.getElementById('btn-remover-foto').addEventListener('click', () => {
+  document.getElementById('edit-foto-input').value = '';
+  // Recarrega o estado original do mercado atual
+  preencherFormEdicao();
+});
+
+// Máscara CEP no formulário de edição
+document.getElementById('edit-cep').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g,'').slice(0,8);
+  if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5);
+  this.value = v;
+});
+
+// Cancelar edição — volta pra aba Reputação
+document.getElementById('btn-cancelar-edicao').addEventListener('click', () => {
+  limparErrosEdicao();
+  const firstTab = document.querySelector('.ptab');
+  pTab('reputacao', firstTab);
+});
+
+// Submit edição — geocodifica o endereço antes de salvar
+document.getElementById('form-editar-mercado').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!validarFormEdicao()) return;
+
+  const btn = document.getElementById('btn-salvar-edicao');
+  const cepVal    = document.getElementById('edit-cep').value.trim();
+  const endBase   = document.getElementById('edit-endereco').value.trim();
+  const cidadeVal = document.getElementById('edit-cidade').value.trim();
+  const endCompleto = cepVal ? `${endBase} - CEP: ${cepVal}` : endBase;
+
+  btn.disabled = true;
+  btn.textContent = 'Buscando localização...';
+
+  const coords = await geocodificarEndereco(endBase + (cepVal ? ', ' + cepVal : ''), cidadeVal);
+
+  if (!coords) {
+    toast('Não foi possível localizar o endereço no mapa. Verifique o endereço e a cidade.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Salvar alterações';
+    return;
+  }
+
+  const payload = {
+    nomeMercado: document.getElementById('edit-nome').value.trim(),
+    endereco:    endCompleto,
+    cidade:      cidadeVal,
+    latitude:    coords.latitude,
+    longitude:   coords.longitude,
+  };
+
+  try {
+    btn.textContent = 'Salvando...';
+    const res = await fetch(`${API}/api/mercados/${idMercadoAtual}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const msg = await res.text();
+      toast(msg || 'Erro ao salvar alterações', 'error');
+      return;
+    }
+
+    let atualizado = await res.json();
+
+    // Envia nova foto se selecionada
+    const fotoInput = document.getElementById('edit-foto-input');
+    if (fotoInput.files[0]) {
+      btn.textContent = 'Enviando foto...';
+      const fd = new FormData();
+      fd.append('foto', fotoInput.files[0]);
+      const resFoto = await fetch(`${API}/api/mercados/${idMercadoAtual}/foto`, { method: 'POST', body: fd });
+      if (!resFoto.ok) {
+        toast('Dados salvos, mas houve erro ao enviar a foto. Tente novamente.', 'error');
+      } else {
+        atualizado = await resFoto.json();
+        toast('Dados e foto atualizados!', 'success');
+      }
+    } else {
+      toast('Dados do mercado atualizados!', 'success');
+    }
+
+    mercadosSalvos[idMercadoAtual] = atualizado;
+    document.getElementById('nome-mercado').textContent = atualizado.nomeMercado;
+    const opt = document.querySelector(`#sel-mercado option[value="${idMercadoAtual}"]`);
+    if (opt) opt.textContent = atualizado.nomeMercado;
+
+    if (atualizado.foto) {
+      const fotoImg  = document.getElementById('edit-foto-img');
+      const fotoArea = document.getElementById('edit-foto-area');
+      fotoImg.src = `${API}/uploads/${atualizado.foto}`;
+      fotoImg.style.display = 'block';
+      fotoArea.classList.add('has-preview');
+    }
+    fotoInput.value = '';
+    document.getElementById('btn-remover-foto').style.display = 'none';
+  } catch (err) {
+    console.error('Erro ao salvar mercado:', err);
+    toast('Erro de conexão', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salvar alterações';
+  }
+});
+
+carregarMercados();
+</script>
+</body>
+</html>

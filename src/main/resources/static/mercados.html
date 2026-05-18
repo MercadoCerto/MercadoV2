@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mercados — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<header class="header" id="main-header"></header>
+
+<main class="page">
+  <div class="container" style="padding-top:24px; padding-bottom:48px;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h1 class="page-title">Mercados</h1>
+        <p class="page-subtitle">Explore e avalie os mercados cadastrados</p>
+      </div>
+      <a href="cadastro-mercado.html" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Cadastrar Mercado
+      </a>
+    </div>
+
+    <div id="lista-mercados" class="market-list">
+      <div class="loading-center"><div class="spinner"></div></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL AVALIAÇÃO -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 class="modal-title">Avaliar Mercado</h3>
+    <p class="modal-subtitle" id="modal-nome-mercado">Selecione uma nota de 1 a 5 estrelas</p>
+
+    <div class="stars-selector" id="stars-selector">
+      <button class="star-btn" data-val="1" type="button">★</button>
+      <button class="star-btn" data-val="2" type="button">★</button>
+      <button class="star-btn" data-val="3" type="button">★</button>
+      <button class="star-btn" data-val="4" type="button">★</button>
+      <button class="star-btn" data-val="5" type="button">★</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="comentario">Comentário (opcional)</label>
+      <textarea class="form-textarea" id="comentario" placeholder="Conte sua experiência..." style="min-height:80px;"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-full" id="btn-enviar-avaliacao">Enviar Avaliação</button>
+      <button class="btn btn-ghost btn-full" id="btn-fechar-modal">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+  let mercadoSelecionado = null;
+  let notaSelecionada = 0;
+  let mercadosMap = {};
+
+  // ── Stars ──────────────────────────────────────
+  const starBtns = document.querySelectorAll('.star-btn');
+
+  starBtns.forEach(btn => {
+    btn.addEventListener('mouseenter', () => paintStars(+btn.dataset.val));
+    btn.addEventListener('mouseleave', () => paintStars(notaSelecionada));
+    btn.addEventListener('click', () => {
+      notaSelecionada = +btn.dataset.val;
+      paintStars(notaSelecionada);
+    });
+  });
+
+  function paintStars(n) {
+    starBtns.forEach(b => b.classList.toggle('filled', +b.dataset.val <= n));
+  }
+
+  // ── Modal ──────────────────────────────────────
+  function openModal(mercado) {
+    mercadoSelecionado = mercado;
+    notaSelecionada = 0;
+    paintStars(0);
+    document.getElementById('comentario').value = '';
+    document.getElementById('modal-nome-mercado').textContent = mercado.nomeMercado;
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  document.getElementById('btn-fechar-modal').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // ── Enviar avaliação ───────────────────────────
+  document.getElementById('btn-enviar-avaliacao').addEventListener('click', async () => {
+    if (!notaSelecionada) { toast('Selecione uma nota', 'error'); return; }
+
+    const btn = document.getElementById('btn-enviar-avaliacao');
+    setLoading(btn, true);
+
+    try {
+      const res = await fetch(`${API}/api/avaliacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idMercado: mercadoSelecionado.idMercado,
+          nota: notaSelecionada,
+          comentario: document.getElementById('comentario').value || null,
+          dataAvaliacao: new Date().toISOString()
+        })
+      });
+
+      if (res.ok) {
+        toast('Avaliação enviada!', 'success');
+        closeModal();
+        carregarMercados();
+      } else {
+        toast('Erro ao enviar avaliação', 'error');
+      }
+    } catch {
+      toast('Erro de conexão', 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+
+  // ── Carregar mercados ──────────────────────────
+  async function carregarMercados() {
+    const container = document.getElementById('lista-mercados');
+    container.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+
+    try {
+      const [resMercados, resRanking] = await Promise.all([
+        fetch(`${API}/api/mercados`),
+        fetch(`${API}/api/avaliacoes/ranking`)
+      ]);
+
+      const mercados = await resMercados.json();
+      const ranking  = await resRanking.json();
+
+      const mediaMap = {};
+      ranking.forEach(r => { mediaMap[r.id_mercado] = { media: r.media || 0, votos: r.votos || 0 }; });
+
+      if (mercados.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🏪</div>
+            <div class="empty-state-title">Nenhum mercado cadastrado</div>
+            <div class="empty-state-text">Seja o primeiro a <a href="cadastro-mercado.html" style="color:var(--green)">cadastrar um mercado</a>.</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      mercados.forEach(m => { mercadosMap[m.idMercado] = m; });
+
+      mercados.forEach(m => {
+        const info  = mediaMap[m.idMercado] || { media: 0, votos: 0 };
+        const media = parseFloat(info.media) || 0;
+        const votos = info.votos;
+
+        const enderecoHtml = (m.endereco || m.cidade)
+          ? `<div class="market-coords">
+               📍 ${[m.endereco, m.cidade].filter(Boolean).join(' — ')}
+             </div>`
+          : (m.latitude && m.longitude
+              ? `<div class="market-coords">📍 ${m.latitude.toFixed(4)}, ${m.longitude.toFixed(4)}</div>`
+              : '<div class="market-coords">Sem localização</div>');
+
+        const card = document.createElement('div');
+        card.className = 'market-card';
+        card.innerHTML = `
+          <div class="market-card-left">
+            <div class="market-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div style="min-width:0;">
+              <div class="market-name">${m.nomeMercado}</div>
+              ${enderecoHtml}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;">
+            <div class="market-rating">
+              <div class="stars">${starsDisplay(media)}</div>
+              <div class="rating-val">${media.toFixed(1)} (${votos} ${votos === 1 ? 'voto' : 'votos'})</div>
+            </div>
+            <button class="btn btn-primary btn-avaliar" data-id="${m.idMercado}">
+              Avaliar
+            </button>
+          </div>`;
+        container.appendChild(card);
+      });
+
+      container.querySelectorAll('.btn-avaliar').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const m = mercadosMap[parseInt(btn.dataset.id)];
+          if (m) openModal(m);
+        });
+      });
+
+    } catch (err) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">⚠️</div>
+          <div class="empty-state-title">Erro ao carregar</div>
+          <div class="empty-state-text">Verifique se o servidor está rodando.</div>
+        </div>`;
+    }
+  }
+
+  carregarMercados();
+</script>
+</body>
+</html>

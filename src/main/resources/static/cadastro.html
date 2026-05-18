@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Criar Conta — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <a href="index.html" class="auth-logo">
+        <span class="brand-mercado">Mercado</span><span class="brand-certo">Certo</span>
+      </a>
+      <h2 class="auth-tagline">
+        Junte-se a quem <em>compra melhor.</em>
+      </h2>
+      <p class="auth-description">
+        Crie sua conta gratuita e comece a comparar precos, avaliar mercados e economizar nas suas compras do dia a dia.
+      </p>
+    </div>
+    <div class="auth-features">
+      <div class="auth-feature"><div class="auth-feature-dot"></div> Cadastro 100% gratuito</div>
+      <div class="auth-feature"><div class="auth-feature-dot"></div> Avalie e vote nos mercados</div>
+      <div class="auth-feature"><div class="auth-feature-dot"></div> Crie listas de compras</div>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-form-box">
+      <h1 class="auth-form-title">Criar conta</h1>
+      <p class="auth-form-subtitle">Escolha o tipo de conta e preencha os dados</p>
+
+      <form id="form-cadastro">
+        <!-- Tipo de conta -->
+        <div class="form-group">
+          <label class="form-label">Tipo de Conta</label>
+          <div class="account-type-toggle">
+            <button type="button" class="account-type-btn active" data-type="USUARIO">Consumidor</button>
+            <button type="button" class="account-type-btn" data-type="COMERCIO">Supermercado</button>
+          </div>
+        </div>
+
+        <input type="hidden" id="tipoConta" value="USUARIO"/>
+
+        <div class="form-group">
+          <label class="form-label" for="nome">Nome <span class="req">*</span></label>
+          <input class="form-input" id="nome" type="text" placeholder="Seu nome completo" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="login">Login <span class="req">*</span></label>
+          <input class="form-input" id="login" type="text" placeholder="Escolha um nome de usuario" autocomplete="username" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">E-mail <span class="req">*</span></label>
+          <input class="form-input" id="email" type="email" placeholder="seu@email.com" autocomplete="email" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="senha">Senha <span class="req">*</span></label>
+          <input class="form-input" id="senha" type="password" placeholder="Minimo 6 caracteres" autocomplete="new-password" required/>
+        </div>
+
+        <!-- Campo CNPJ (visivel apenas para COMERCIO) -->
+        <div class="form-group cnpj-field" id="cnpj-group">
+          <label class="form-label" for="cnpj">CNPJ <span class="req">*</span></label>
+          <input class="form-input" id="cnpj" type="text" placeholder="00.000.000/0000-00" maxlength="18"/>
+          <span style="font-size:11px; color:var(--ink-soft);">Obrigatorio para contas de supermercado</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-cadastro" style="margin-top:8px;">
+          Criar Conta
+        </button>
+      </form>
+
+      <div class="auth-switch" style="margin-top:24px;">
+        Ja possui conta? <a href="login.html">Entrar</a>
+      </div>
+      <div class="auth-switch" style="margin-top:10px;">
+        <a href="index.html" style="color:var(--ink-soft);">← Voltar ao inicio</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/main.js"></script>
+<script>
+  // Se ja esta logado, redireciona
+  if (getUsuarioLogado()) {
+    window.location = 'index.html';
+  }
+
+  // Toggle tipo de conta
+  document.querySelectorAll('.account-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.account-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tipo = btn.dataset.type;
+      document.getElementById('tipoConta').value = tipo;
+      const cnpjGroup = document.getElementById('cnpj-group');
+      if (tipo === 'COMERCIO') {
+        cnpjGroup.classList.add('show');
+      } else {
+        cnpjGroup.classList.remove('show');
+      }
+    });
+  });
+
+  // Mascara CNPJ
+  document.getElementById('cnpj').addEventListener('input', function() {
+    this.value = formatCnpj(this.value);
+  });
+
+  document.getElementById('form-cadastro').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-cadastro');
+    const nome = document.getElementById('nome').value.trim();
+    const login = document.getElementById('login').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    const tipoConta = document.getElementById('tipoConta').value;
+    const cnpj = document.getElementById('cnpj').value.replace(/\D/g, '');
+
+    if (!nome || !login || !email || !senha) { toast('Preencha todos os campos', 'error'); return; }
+    if (!isValidEmail(email))                { toast('E-mail invalido', 'error'); return; }
+    if (senha.length < 6)                    { toast('Senha deve ter pelo menos 6 caracteres', 'error'); return; }
+
+    if (tipoConta === 'COMERCIO') {
+      if (!cnpj) { toast('CNPJ e obrigatorio para contas de supermercado', 'error'); return; }
+      if (!isValidCnpj(cnpj)) { toast('CNPJ invalido. Verifique o numero informado.', 'error'); return; }
+    }
+
+    const body = {
+      nomeUsuario: nome,
+      login,
+      email,
+      senha,
+      tipoConta
+    };
+    if (tipoConta === 'COMERCIO') {
+      body.cnpj = cnpj;
+    }
+
+    setLoading(btn, true);
+    try {
+      const res = await fetch(`${API}/api/usuarios/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        const usuario = await res.json();
+        setUsuarioLogado(usuario);
+        toast('Conta criada com sucesso!', 'success');
+        const destino = tipoConta === 'COMERCIO' ? 'painel-comercio.html' : 'dashboard.html';
+        setTimeout(() => window.location = destino, 700);
+      } else {
+        const txt = await res.text();
+        toast('Erro: ' + txt, 'error');
+      }
+    } catch {
+      toast('Erro ao conectar ao servidor', 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  });
+</script>
+</body>
+</html>

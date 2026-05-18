@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Comparar Preços — MercadoCerto</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="header" id="main-header"></header>
+
+<main class="page">
+  <div class="container" style="padding-top:24px;padding-bottom:48px;max-width:760px">
+
+    <!-- BUSCA -->
+    <div style="margin-bottom:28px">
+      <h1 class="page-title">Comparar Preços</h1>
+      <p class="page-subtitle">Veja onde o mesmo produto está mais barato</p>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <select class="form-select" id="sel-produto" style="flex:1">
+          <option value="">Selecione um produto...</option>
+        </select>
+        <button class="btn btn-primary" id="btn-comparar">Comparar</button>
+      </div>
+    </div>
+
+    <!-- RESULTADO -->
+    <div id="resultado" style="display:none">
+
+      <!-- tabela de preços -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <h2 style="font-family:var(--font-head);font-size:18px;font-weight:800" id="nome-produto"></h2>
+          <span id="badge-economia" class="badge badge-green" style="display:none"></span>
+        </div>
+        <div id="tabela-precos"></div>
+      </div>
+
+      <!-- histórico (Chart.js) -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:10px">
+          <h3 style="font-family:var(--font-head);font-size:16px;font-weight:700">Histórico de preços</h3>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="form-select" id="sel-mercado-hist" style="font-size:12px;padding:5px 10px"></select>
+            <select class="form-select" id="sel-periodo" style="font-size:12px;padding:5px 10px">
+              <option value="7">7 dias</option>
+              <option value="30" selected>30 dias</option>
+              <option value="90">90 dias</option>
+            </select>
+          </div>
+        </div>
+        <p class="text-muted" style="margin-bottom:14px;font-size:12px">Evolução do preço neste mercado ao longo do tempo</p>
+        <canvas id="chart-hist" height="100"></canvas>
+        <div id="hist-empty" style="text-align:center;padding:32px;color:var(--ink-soft);font-size:13px;display:none">
+          Nenhum histórico disponível para este mercado
+        </div>
+      </div>
+
+    </div>
+
+    <!-- empty state inicial -->
+    <div id="empty-inicial" class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <div class="empty-state-title">Selecione um produto</div>
+      <div class="empty-state-text">Escolha um produto acima para ver os preços em todos os mercados</div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/main.js"></script>
+<script src="js/header.js"></script>
+<script>
+let chartHist = null;
+let produtoAtual = null;
+let precosAtuais = [];
+
+// ── Carregar produtos ──────────────────────────────────────────────
+async function carregarProdutos() {
+  const res  = await fetch(`${API}/api/produtos`);
+  const list = await res.json();
+  const sel  = document.getElementById('sel-produto');
+  list.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.idProduto;
+    opt.textContent = `${p.nomeProduto} — ${p.marca}`;
+    sel.appendChild(opt);
+  });
+}
+
+// ── Comparar ──────────────────────────────────────────────────────
+document.getElementById('btn-comparar').addEventListener('click', comparar);
+document.getElementById('sel-produto').addEventListener('change', () => {
+  if (document.getElementById('sel-produto').value) comparar();
+});
+
+async function comparar() {
+  const idProduto = document.getElementById('sel-produto').value;
+  if (!idProduto) { toast('Selecione um produto', 'error'); return; }
+
+  const btn = document.getElementById('btn-comparar');
+  setLoading(btn, true);
+
+  try {
+    const res  = await fetch(`${API}/api/precos/comparar?produto=${idProduto}`);
+    const data = await res.json();
+
+    produtoAtual = data;
+    precosAtuais = (data.precos || []).sort((a, b) => a.valor - b.valor);
+
+    document.getElementById('empty-inicial').style.display = 'none';
+    document.getElementById('resultado').style.display     = 'block';
+    document.getElementById('nome-produto').textContent    = data.nomeProduto;
+
+    await renderTabela(precosAtuais);
+    renderSelectMercado(precosAtuais);
+    carregarHistorico();
+
+  } catch { toast('Erro ao buscar preços', 'error'); }
+  finally { setLoading(btn, false); }
+}
+
+// ── Tabela de preços ──────────────────────────────────────────────
+async function renderTabela(precos) {
+  const cont = document.getElementById('tabela-precos');
+  const badge = document.getElementById('badge-economia');
+
+  if (!precos.length) {
+    cont.innerHTML = '<p class="text-muted">Nenhum preço cadastrado para este produto.</p>';
+    badge.style.display = 'none';
+    return;
+  }
+
+  const min = precos[0].valor;
+  const max = precos[precos.length - 1].valor;
+  const dif = ((max - min) / max * 100).toFixed(0);
+
+  if (dif > 0) {
+    badge.textContent    = `${dif}% de diferença entre o mais barato e o mais caro`;
+    badge.style.display  = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // Tenta obter dados do produto para calcular preço/unidade
+  let produtoInfo = null;
+  try {
+    const rp = await fetch(`${API}/api/produtos/${produtoAtual.idProduto}`);
+    if (rp.ok) produtoInfo = await rp.json();
+  } catch {}
+
+  function calcPU(valor) {
+    if (!produtoInfo || !produtoInfo.peso || !produtoInfo.unidade || produtoInfo.peso <= 0) return null;
+    let fator = 1;
+    if (produtoInfo.unidade === 'g' || produtoInfo.unidade === 'ml') fator = 1000;
+    const ub = (produtoInfo.unidade === 'kg' || produtoInfo.unidade === 'g') ? 'kg' : 'L';
+    return { pu: valor / (produtoInfo.peso / fator), ub };
+  }
+
+  cont.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:1px solid var(--surface-3)">
+          <th style="text-align:left;padding:8px 4px;color:var(--ink-soft);font-weight:500">Mercado</th>
+          <th style="text-align:right;padding:8px 4px;color:var(--ink-soft);font-weight:500">Preço</th>
+          <th style="text-align:right;padding:8px 4px;color:var(--ink-soft);font-weight:500">Por unidade</th>
+          <th style="text-align:right;padding:8px 4px;color:var(--ink-soft);font-weight:500">Atualizado</th>
+          <th style="padding:8px 4px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${precos.map((p, i) => {
+          const puInfo = calcPU(Number(p.valor));
+          const puHtml = puInfo ? `R$ ${puInfo.pu.toFixed(2)}/${puInfo.ub}` : '—';
+          return `
+          <tr style="border-bottom:1px solid var(--surface-3)">
+            <td style="padding:10px 4px;font-weight:${i===0?'600':'400'};color:var(--ink)">
+              ${i === 0 ? '🏆 ' : ''}${p.nomeMercado}
+            </td>
+            <td style="padding:10px 4px;text-align:right;font-family:var(--font-head);font-size:16px;font-weight:800;color:${i===0?'var(--green)':'var(--ink)'}">
+              R$ ${Number(p.valor).toFixed(2)}
+            </td>
+            <td style="padding:10px 4px;text-align:right;font-size:12px;color:var(--ink-soft)">${puHtml}</td>
+            <td style="padding:10px 4px;text-align:right;color:var(--ink-soft);font-size:12px">
+              ${p.dataHora ? new Date(p.dataHora).toLocaleDateString('pt-BR') : '—'}
+            </td>
+            <td style="padding:10px 4px;text-align:right">
+              ${i === 0
+                ? '<span class="badge badge-green">Mais barato</span>'
+                : `<span style="font-size:11px;color:var(--ink-soft)">+R$ ${(p.valor - precos[0].valor).toFixed(2)}</span>`}
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Select de mercado para histórico ─────────────────────────────
+function renderSelectMercado(precos) {
+  const sel = document.getElementById('sel-mercado-hist');
+  sel.innerHTML = '';
+  precos.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.idMercado;
+    opt.textContent = p.nomeMercado;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', carregarHistorico);
+  document.getElementById('sel-periodo').addEventListener('change', carregarHistorico);
+}
+
+// ── Histórico com Chart.js ────────────────────────────────────────
+async function carregarHistorico() {
+  const idProduto = document.getElementById('sel-produto').value;
+  const idMercado = document.getElementById('sel-mercado-hist').value;
+  const dias      = parseInt(document.getElementById('sel-periodo').value);
+  if (!idProduto || !idMercado) return;
+
+  const res  = await fetch(`${API}/api/precos/historico?produto=${idProduto}&mercado=${idMercado}`);
+  const hist = await res.json();
+
+  const empty = document.getElementById('hist-empty');
+  const canvas = document.getElementById('chart-hist');
+
+  // Filtra pelo período selecionado
+  const corte = new Date();
+  corte.setDate(corte.getDate() - dias);
+  const filtrado = hist.filter(h => new Date(h.dataHora) >= corte);
+
+  if (!filtrado.length) {
+    empty.style.display  = 'block';
+    canvas.style.display = 'none';
+    return;
+  }
+
+  empty.style.display  = 'none';
+  canvas.style.display = 'block';
+
+  const labels = filtrado.map(h => new Date(h.dataHora).toLocaleDateString('pt-BR'));
+  const values = filtrado.map(h => Number(h.valor));
+
+  if (chartHist) chartHist.destroy();
+
+  chartHist = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Preço (R$)',
+        data: values,
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(107,34,243,.08)',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+        pointRadius: filtrado.length <= 10 ? 4 : 0,
+        pointHoverRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `R$ ${ctx.parsed.y.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: { callback: v => `R$ ${v.toFixed(2)}` },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+carregarProdutos().then(() => {
+  const params = new URLSearchParams(window.location.search);
+  const idProduto = params.get('produto');
+  if (idProduto) {
+    document.getElementById('sel-produto').value = idProduto;
+    comparar();
+  }
+});
+</script>
+</body>
+</html>

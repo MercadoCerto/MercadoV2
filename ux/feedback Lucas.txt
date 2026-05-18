@@ -1,0 +1,104 @@
+Trab2 UX - Documentação
+
+Possíveis melhorias
+
+*****IMPORTANTE: Deixar com menos cara de IA, mesmo problema do trab1*****
+
+2.1 Tipografia e Legibilidade - "público-alvo da plataforma: donas de casa, pessoas com mais idade e usuários com dificuldade visual." Está certo isso? esse é o nosso publico alvo? 
+
+2.4 Tela do Mapa Interativo - testar API do Google para o mapa
+
+"- Adição de campo de busca manual por região (cidade, bairro ou CEP) para usuários que desejam pesquisar mercados em outras localidades;"
+"- Ao clicar em um mercado no mapa, o popup agora exibe um botão "Ver detalhes" que abre a página completa do mercado na mesma aba, sem necessidade de abrir nova aba."
+Isso vai ter mesmo? campo de pesquisa por região com cidade, bairro ou CEP? Esse botão "ver detalhes" vai existir mesmo? vai redirecionar para a pagina do mercado?
+
+2.5 Separação de Perfis: Consumidor e Comerciante
+
+"- Para franquias (ex.: rede com múltiplas unidades), o comerciante seleciona em qual unidade/filial deseja cadastrar os produtos, evitando confusão entre lojas da mesma rede;"
+Vai ter isso de franquias? não vai fugir muito do escopo, trabalho demais?
+
+"– Remoção do botão "Cadastrar Produto" da listagem pública de produtos, que era visível para consumidores comuns — essa ação agora existe exclusivamente no painel do comerciante." CONFERIR ISSO
+
+2.6 Validação de Preços (Anti-fraude)
+
+Não to por dentro dessa funcionalidade no site, ta certo isso?
+
+2.7 Cadastro de Produto — UX do Formulário
+
+"- Adição de botões de incremento rápido: "+R$ 0,10", "+R$ 1,00" e "+R$ 10,00" ao lado do campo de preço, permitindo ajustes rápidos sem digitar;"
+"- Aceitação automática de ambos os formatos (vírgula e ponto como separador decimal), com normalização interna para o formato correto."
+CONFERIR SE ESTA IMPLEMTADO
+
+2.8 Lista de Compras
+
+CONFERIR SE ESTA IMPLEMTADO
+
+2.9 Tela Inicial (Home)
+
+CONFERIR SE ESTA IMPLEMTADO
+
+2.10 Responsividade
+
+CONFERIR SE ESTA RESPONSIVO
+
+2.11 Avaliações e Ranking
+
+CONFERIR SE ESTA IMPLEMTADO
+
+2.12 Correção de Bugs
+
+CONFERIR SE ESTA IMPLEMTADO
+*Coisa linda essa verificação no front e no back*
+
+3.1.1 Definição de fluxos de tarefas do usuário
+
+Aqui acho válido a gente testar para confirmar se o fluxo se está certo, também para evitar erros na documentação
+Talvez adicionar mais fluxos na documentação, como o professor deu de exemplo, fluxo de compra de produto, fazer lista de compra, adicionar produto (comerciante), etc.
+
+3.1.2 Ciclos de ação e feedback
+
+CONFERIR SE ESTA IMPLEMTADO
+
+3.2 Affordance
+
+Conferir se não tem falsas affordances (elementos que parecem interativos mas não são). Acredito que não vai ter após as melhorias, O QUE É BOM.
+
+3.2.3 Cores, formas e metáforas visuais
+
+CONFERIR SE ESTA IMPLEMTADO
+
+3.3.1 Consistência visual e semântica
+
+CONFERIR SE ESTA IMPLEMTADO
+
+3.3.2 Organização lógica e hierarquia visual
+
+CONFERIR SE ESTA IMPLEMTADO
+
+3.3.3 Padrões de design reconhecíveis
+
+CONFERIR SE ESTA IMPLEMTADO, em especial "– Menu hamburger (☰) para navegação mobile — convenção universal para menus recolhíveis em dispositivos de tela pequena;"
+"– Botão flutuante (FAB) para ações primárias no mobile — convenção do Material Design amplamente adotada."
+Fala sobre MOBILE, tem que rever isso
+
+3.4.1 Eficiência
+
+CONFERIR SE ESTA IMPLEMTADO
+
+3.4.2 Eficácia
+
+CONFERIR SE ESTA IMPLEMTADO
+
+3.4.3 Satisfação
+
+CONFERIR SE ESTA IMPLEMTADO
+
+3.4.4 Acessibilidade
+
+CONFERIR SE ESTA IMPLEMTADO, principalmente "Responsividade completa", "Navegação por teclado", "Textos alternativos em todas as imagens de produtos e screenshots, atendendo ao critério 1.1.1 (Non-text Content) da WCAG;" e "Atributos ARIA nos componentes dinâmicos"
+
+REFERÊNCIAS
+
+BEM DEMAIS COLOCAR ISSO, SE TIVER MAIS REFERENCIAS ATUALIZAR
+
+***Como a grande maioria das melhorias não estão implementadas tem que fazer essa verificação para evitar falsa informação na documentação, tanto o site quando a documentação tem que estar alinhados.***
