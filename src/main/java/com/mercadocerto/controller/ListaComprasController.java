@@ -64,12 +64,14 @@ public class ListaComprasController {
      * POST /api/lista/{idLista}/item { "idProduto": 1, "quantidade": 2 }
      */
     @PostMapping("/{idLista}/item")
-    public ResponseEntity<ListaCompras> adicionarItem(
+    public ResponseEntity<?> adicionarItem(
             @PathVariable Integer idLista,
             @RequestBody ItemListaRequestDTO item) {
         try {
             ListaCompras lista = service.adicionarItem(idLista, item.idProduto(), item.quantidade());
             return ResponseEntity.ok(lista);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

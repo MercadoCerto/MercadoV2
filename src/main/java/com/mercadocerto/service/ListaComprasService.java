@@ -50,6 +50,10 @@ public class ListaComprasService {
         ListaCompras lista = listaRepo.findById(idLista)
                 .orElseThrow(() -> new RuntimeException("Lista não encontrada: " + idLista));
 
+        if (idProduto == null || !produtoRepo.existsById(idProduto)) {
+            throw new IllegalArgumentException("Produto não cadastrado: " + idProduto);
+        }
+
         // Verifica se o produto já está na lista
         Optional<ItemLista> existente = lista.getItens().stream()
                 .filter(i -> i.getIdProduto().equals(idProduto))

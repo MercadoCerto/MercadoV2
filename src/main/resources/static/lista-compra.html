@@ -5,176 +5,446 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Lista de Compras — MercadoCerto</title>
   <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .lc-grid { display:grid; grid-template-columns: 360px 1fr; gap:24px; align-items:start; }
+    @media(max-width:820px){ .lc-grid { grid-template-columns:1fr; } }
+
+    .lc-search-wrap { position:relative; }
+    .lc-suggest {
+      position:absolute; top:100%; left:0; right:0; z-index:50;
+      background:var(--surface-1); border:1px solid var(--ink-faint);
+      border-radius:var(--radius-sm); max-height:280px; overflow:auto;
+      box-shadow:0 8px 24px rgba(0,0,0,.08); display:none;
+    }
+    .lc-suggest.open { display:block; }
+    .lc-suggest-item {
+      padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--surface-3);
+      font-size:13px; display:flex; flex-direction:column; gap:2px;
+    }
+    .lc-suggest-item:hover, .lc-suggest-item.active { background:var(--surface-2); }
+    .lc-suggest-item:last-child { border-bottom:none; }
+    .lc-suggest-name { font-weight:600; color:var(--ink); }
+    .lc-suggest-meta { font-size:11px; color:var(--ink-soft); }
+
+    .lc-item {
+      display:flex; align-items:center; gap:10px; padding:10px 0;
+      border-bottom:1px solid var(--surface-3);
+    }
+    .lc-item:last-child { border-bottom:none; }
+    .lc-item-info { flex:1; min-width:0; }
+    .lc-item-name { font-weight:600; font-size:14px; color:var(--ink); }
+    .lc-item-meta { font-size:11px; color:var(--ink-soft); }
+    .lc-item-qty { display:flex; align-items:center; gap:6px; }
+    .lc-item-qty input { width:54px; padding:4px 6px; text-align:center; }
+
+    .lc-plano-card { border:1px solid var(--ink-faint); border-radius:var(--radius-sm); padding:14px; margin-bottom:12px; background:var(--surface-1); }
+    .lc-plano-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+    .lc-plano-merc { font-family:var(--font-head); font-weight:700; font-size:15px; }
+    .lc-plano-sub  { font-weight:700; color:var(--green); }
+    .lc-plano-item { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; color:var(--ink-soft); }
+    .lc-plano-item strong { color:var(--ink); font-weight:600; }
+    .lc-resumo { background:#ecfdf5; border:1px solid #86efac; padding:14px; border-radius:var(--radius-sm); margin-bottom:14px; }
+    .lc-resumo-total { font-family:var(--font-head); font-size:22px; font-weight:800; color:#15803d; }
+    .lc-resumo-eco { font-size:13px; color:#166534; }
+  </style>
 </head>
 <body>
 
 <header class="header" id="main-header"></header>
 
 <main class="page">
-  <div class="container" style="padding-top:24px; padding-bottom:48px; max-width:720px; display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start;">
+  <div class="container" style="padding-top:24px; padding-bottom:48px; max-width:1100px;">
 
-    <!-- FORM NOVA LISTA -->
-    <div>
+    <div style="margin-bottom:20px;">
       <h1 class="page-title">Lista de Compras</h1>
-      <p class="page-subtitle">Organize suas compras por lista</p>
-
-      <div class="card">
-        <h2 style="font-family:var(--font-head); font-size:17px; font-weight:700; margin-bottom:20px;">Nova lista</h2>
-
-        <form id="form-lista">
-          <div class="form-group">
-            <label class="form-label" for="listaNome">Nome da Lista <span class="req">*</span></label>
-            <input class="form-input" id="listaNome" type="text" placeholder="Ex: Compras do mês" required/>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="listaItens">Itens <span style="font-weight:400; color:var(--ink-soft);">(um por linha, formato: item:qtd)</span></label>
-            <textarea class="form-textarea" id="listaItens" placeholder="Arroz:2&#10;Feijão:1&#10;Leite:3&#10;Ovos:12"></textarea>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-full">
-            Salvar Lista
-          </button>
-        </form>
-      </div>
+      <p class="page-subtitle">Monte sua lista com produtos do catálogo e descubra a melhor combinação de mercados</p>
     </div>
 
-    <!-- LISTAS SALVAS -->
-    <div>
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; margin-top:52px;">
-        <p style="font-family:var(--font-head); font-size:17px; font-weight:700;">Suas listas</p>
-        <button class="btn btn-ghost" id="btn-limpar" style="font-size:12px; padding:6px 12px;">Limpar tudo</button>
+    <div class="lc-grid">
+
+      <!-- Coluna esquerda: minhas listas + criar -->
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <h2 style="font-family:var(--font-head); font-size:16px; font-weight:700; margin-bottom:14px;">Nova lista</h2>
+          <form id="form-nova-lista" style="display:flex; gap:8px;">
+            <input class="form-input" id="nova-lista-nome" type="text" placeholder="Ex: Compras da semana" required style="flex:1;"/>
+            <button type="submit" class="btn btn-primary" style="padding:10px 14px;">Criar</button>
+          </form>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <p style="font-family:var(--font-head); font-size:15px; font-weight:700;">Minhas listas</p>
+        </div>
+
+        <div id="minhas-listas"></div>
       </div>
-      <div id="listas-container">
-        <!-- JS injeta aqui -->
+
+      <!-- Coluna direita: lista selecionada -->
+      <div id="painel-lista">
+        <div class="card empty-state" style="padding:40px 16px;">
+          <div class="empty-state-icon">🛒</div>
+          <div class="empty-state-title">Selecione uma lista</div>
+          <div class="empty-state-text">Crie uma nova lista ao lado ou abra uma existente.</div>
+        </div>
       </div>
+
     </div>
 
   </div>
 </main>
 
-<style>
-  @media(max-width:640px){
-    .container { grid-template-columns:1fr !important; }
-    .page-title { margin-top:0 !important; }
-  }
-</style>
-
 <script src="js/main.js"></script>
 <script src="js/header.js"></script>
 <script>
-  const STORAGE_KEY = 'mc_listas';
+  if (!requireLogin()) { throw new Error('Login necessário'); }
 
-  function getListas() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
+  const usuario = getUsuarioLogado();
+  let listas = [];
+  let listaAtiva = null;     // ListaCompras inteira
+  let produtos = [];         // catálogo para autocomplete
+  let produtoMap = {};       // idProduto -> Produto
+  let listasLegadasMsgExibida = false;
+
+  // ── Aviso único sobre listas antigas em localStorage ─────────────
+  (function avisoLegado() {
+    try {
+      const legado = JSON.parse(localStorage.getItem('mc_listas') || '[]');
+      if (Array.isArray(legado) && legado.length > 0 && !localStorage.getItem('mc_listas_avisado')) {
+        toast('Suas listas antigas (modo legado) foram descontinuadas. Recrie usando produtos do catálogo.', 'info');
+        localStorage.setItem('mc_listas_avisado', '1');
+      }
+    } catch {}
+  })();
+
+  // ── Catálogo de produtos ─────────────────────────────────────────
+  async function carregarProdutos() {
+    try {
+      const res = await fetch(`${API}/api/produtos`);
+      produtos = await res.json();
+      produtoMap = Object.fromEntries(produtos.map(p => [p.idProduto, p]));
+    } catch {
+      toast('Erro ao carregar produtos', 'error');
+    }
   }
 
-  function saveListas(listas) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(listas));
+  // ── Listas do usuário ────────────────────────────────────────────
+  async function carregarListas() {
+    try {
+      const res = await fetch(`${API}/api/lista/usuario/${usuario.idUsuario}`);
+      listas = await res.json();
+      renderMinhasListas();
+    } catch {
+      toast('Erro ao carregar listas', 'error');
+    }
   }
 
-  function renderListas() {
-    const listas = getListas();
-    const container = document.getElementById('listas-container');
-
-    if (listas.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state" style="padding:40px 0;">
-          <div class="empty-state-icon">🛒</div>
-          <div class="empty-state-title">Nenhuma lista salva</div>
-          <div class="empty-state-text">Crie sua primeira lista ao lado.</div>
+  function renderMinhasListas() {
+    const cont = document.getElementById('minhas-listas');
+    if (!listas.length) {
+      cont.innerHTML = `<div class="empty-state" style="padding:20px 0;">
+        <div class="empty-state-text" style="font-size:12px;">Nenhuma lista ainda.</div>
+      </div>`;
+      return;
+    }
+    cont.innerHTML = '';
+    listas.forEach(l => {
+      const ativo = listaAtiva && listaAtiva.idLista === l.idLista;
+      const div = document.createElement('div');
+      div.className = 'card card-sm';
+      div.style.cssText = `margin-bottom:10px;padding:12px;cursor:pointer;border:${ativo?'2px solid var(--green)':'1px solid var(--ink-faint)'};`;
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:var(--font-head);font-weight:700;font-size:14px;">${l.nomeLista}</div>
+            <div style="font-size:11px;color:var(--ink-soft);">${(l.itens || []).length} ite${(l.itens||[]).length===1?'m':'ns'}</div>
+          </div>
+          <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" data-del-lista="${l.idLista}">×</button>
         </div>`;
+      div.addEventListener('click', e => {
+        if (e.target.dataset.delLista) return;
+        abrirLista(l.idLista);
+      });
+      cont.appendChild(div);
+    });
+
+    cont.querySelectorAll('[data-del-lista]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = +btn.dataset.delLista;
+        if (!confirm('Excluir esta lista?')) return;
+        try {
+          const res = await fetch(`${API}/api/lista/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            toast('Lista removida', 'info');
+            if (listaAtiva && listaAtiva.idLista === id) listaAtiva = null;
+            await carregarListas();
+            if (!listaAtiva) renderPainelVazio();
+          } else { toast('Erro ao remover', 'error'); }
+        } catch { toast('Erro de conexão', 'error'); }
+      });
+    });
+  }
+
+  // ── Criar lista ──────────────────────────────────────────────────
+  document.getElementById('form-nova-lista').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nomeLista = document.getElementById('nova-lista-nome').value.trim();
+    if (!nomeLista) return;
+    try {
+      const res = await fetch(`${API}/api/lista`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idUsuario: usuario.idUsuario, nomeLista })
+      });
+      if (res.ok) {
+        const nova = await res.json();
+        document.getElementById('nova-lista-nome').value = '';
+        await carregarListas();
+        abrirLista(nova.idLista);
+        toast('Lista criada!', 'success');
+      } else { toast('Erro ao criar lista', 'error'); }
+    } catch { toast('Erro de conexão', 'error'); }
+  });
+
+  // ── Abrir lista (carrega itens) ──────────────────────────────────
+  async function abrirLista(idLista) {
+    try {
+      const res = await fetch(`${API}/api/lista/${idLista}`);
+      if (!res.ok) { toast('Lista não encontrada', 'error'); return; }
+      listaAtiva = await res.json();
+      renderMinhasListas();
+      renderPainelLista();
+    } catch { toast('Erro ao abrir lista', 'error'); }
+  }
+
+  // ── Render do painel da lista ativa ──────────────────────────────
+  function renderPainelVazio() {
+    document.getElementById('painel-lista').innerHTML = `
+      <div class="card empty-state" style="padding:40px 16px;">
+        <div class="empty-state-icon">🛒</div>
+        <div class="empty-state-title">Selecione uma lista</div>
+        <div class="empty-state-text">Crie uma nova lista ao lado ou abra uma existente.</div>
+      </div>`;
+  }
+
+  function renderPainelLista() {
+    const l = listaAtiva;
+    const itensHtml = (l.itens || []).map(it => {
+      const p = produtoMap[it.idProduto] || {};
+      const emb = formatarEmbalagem(p);
+      return `
+        <div class="lc-item" data-item-id="${it.idProduto}">
+          <div class="lc-item-info">
+            <div class="lc-item-name">${p.nomeProduto || 'Produto #'+it.idProduto}</div>
+            <div class="lc-item-meta">${p.marca || ''}${emb ? ' · ' + emb : ''}</div>
+          </div>
+          <div class="lc-item-qty">
+            <span style="font-size:12px;color:var(--ink-soft);">qtd</span>
+            <input class="form-input" type="number" min="1" step="1" value="${it.quantidade}" disabled/>
+          </div>
+          <button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;" data-remover="${it.idProduto}">Remover</button>
+        </div>`;
+    }).join('');
+
+    document.getElementById('painel-lista').innerHTML = `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 style="font-family:var(--font-head);font-size:18px;font-weight:700;">${l.nomeLista}</h2>
+            <div style="font-size:12px;color:var(--ink-soft);">${(l.itens||[]).length} ite${(l.itens||[]).length===1?'m':'ns'}</div>
+          </div>
+          <button class="btn btn-primary" id="btn-otimizar" ${!(l.itens||[]).length ? 'disabled' : ''}>
+            ✨ Otimizar compras
+          </button>
+        </div>
+
+        <!-- Busca de produto -->
+        <div class="form-group">
+          <label class="form-label">Adicionar produto</label>
+          <div class="lc-search-wrap">
+            <input class="form-input" id="busca-produto" type="text" autocomplete="off"
+                   placeholder="Digite o nome do produto cadastrado..."/>
+            <div class="lc-suggest" id="suggest"></div>
+          </div>
+          <small style="color:var(--ink-soft);font-size:11px;">
+            Só produtos do catálogo podem ser adicionados.
+            <a href="cadastro-produto.html" style="color:var(--green)">Cadastre um novo</a> se faltar algo.
+          </small>
+        </div>
+
+        <!-- Itens -->
+        <div id="lista-itens" style="margin-top:18px;">
+          ${itensHtml || '<div class="empty-state" style="padding:24px 0;"><div class="empty-state-text">Nenhum item ainda. Use a busca acima.</div></div>'}
+        </div>
+
+        <!-- Painel do otimizador -->
+        <div id="otimizador-out" style="margin-top:24px;"></div>
+      </div>`;
+
+    bindBusca();
+    bindRemoverItens();
+    document.getElementById('btn-otimizar').addEventListener('click', otimizar);
+  }
+
+  // ── Autocomplete de produtos ─────────────────────────────────────
+  function bindBusca() {
+    const input = document.getElementById('busca-produto');
+    const box   = document.getElementById('suggest');
+    let activeIdx = -1, current = [];
+
+    function fechar() { box.classList.remove('open'); box.innerHTML = ''; activeIdx = -1; }
+
+    function render(filtro) {
+      const f = filtro.trim().toLowerCase();
+      if (!f) { fechar(); return; }
+      const jaAdicionados = new Set((listaAtiva.itens||[]).map(i => i.idProduto));
+      current = produtos
+        .filter(p => !jaAdicionados.has(p.idProduto))
+        .filter(p =>
+          (p.nomeProduto||'').toLowerCase().includes(f) ||
+          (p.marca||'').toLowerCase().includes(f) ||
+          (p.codigoBarras||'').includes(f))
+        .slice(0, 8);
+
+      if (!current.length) {
+        box.innerHTML = `<div class="lc-suggest-item" style="cursor:default;color:var(--ink-soft);">
+          Nenhum produto encontrado. <a href="cadastro-produto.html" style="color:var(--green)">Cadastrar?</a>
+        </div>`;
+        box.classList.add('open');
+        return;
+      }
+
+      box.innerHTML = current.map((p, idx) => {
+        const emb = formatarEmbalagem(p);
+        return `<div class="lc-suggest-item" data-idx="${idx}">
+          <div class="lc-suggest-name">${p.nomeProduto}</div>
+          <div class="lc-suggest-meta">${p.marca || ''}${emb ? ' · ' + emb : ''} · R$ ${(p.preco||0).toFixed(2)}</div>
+        </div>`;
+      }).join('');
+      box.classList.add('open');
+
+      box.querySelectorAll('[data-idx]').forEach(el => {
+        el.addEventListener('mousedown', e => {
+          e.preventDefault();
+          adicionarProduto(current[+el.dataset.idx]);
+        });
+      });
+    }
+
+    input.addEventListener('input', e => render(e.target.value));
+    input.addEventListener('focus', e => { if (e.target.value) render(e.target.value); });
+    input.addEventListener('blur', () => setTimeout(fechar, 150));
+    input.addEventListener('keydown', e => {
+      const items = box.querySelectorAll('[data-idx]');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx+1, items.length-1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx-1, 0); }
+      else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); adicionarProduto(current[activeIdx]); return; }
+      else if (e.key === 'Escape') { fechar(); return; }
+      items.forEach((it, i) => it.classList.toggle('active', i === activeIdx));
+    });
+  }
+
+  async function adicionarProduto(p) {
+    if (!p) return;
+    try {
+      const res = await fetch(`${API}/api/lista/${listaAtiva.idLista}/item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idProduto: p.idProduto, quantidade: 1 })
+      });
+      if (res.ok) {
+        listaAtiva = await res.json();
+        renderPainelLista();
+        renderMinhasListas();
+        document.getElementById('busca-produto').focus();
+      } else {
+        const txt = await res.text();
+        toast('Erro ao adicionar: ' + (txt || res.status), 'error');
+      }
+    } catch { toast('Erro de conexão', 'error'); }
+  }
+
+  function bindRemoverItens() {
+    document.querySelectorAll('[data-remover]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idProduto = +btn.dataset.remover;
+        try {
+          const res = await fetch(`${API}/api/lista/${listaAtiva.idLista}/item/${idProduto}`, { method: 'DELETE' });
+          if (res.ok) {
+            listaAtiva = await res.json();
+            renderPainelLista();
+            renderMinhasListas();
+          } else { toast('Erro ao remover item', 'error'); }
+        } catch { toast('Erro de conexão', 'error'); }
+      });
+    });
+  }
+
+  // ── Otimizador ───────────────────────────────────────────────────
+  async function otimizar() {
+    const out = document.getElementById('otimizador-out');
+    out.innerHTML = `<div class="loading-center"><div class="spinner"></div></div>`;
+    try {
+      const res = await fetch(`${API}/api/lista/${listaAtiva.idLista}/otimizar`);
+      if (!res.ok) { out.innerHTML = `<div class="empty-state-text">Não foi possível otimizar.</div>`; return; }
+      const r = await res.json();
+      renderOtimizacao(r);
+    } catch {
+      out.innerHTML = `<div class="empty-state-text">Erro de conexão ao otimizar.</div>`;
+    }
+  }
+
+  function renderOtimizacao(r) {
+    const out = document.getElementById('otimizador-out');
+    const economia = Number(r.economia || 0);
+    const planos = r.planos || [];
+
+    if (!planos.length) {
+      out.innerHTML = `<div class="lc-resumo" style="background:#fef9c3;border-color:#fde047;">
+        <strong>Sem preços disponíveis</strong> para os itens da lista. Cadastre preços em mercados para ver a otimização.
+      </div>`;
       return;
     }
 
-    container.innerHTML = '';
+    const resumo = `
+      <div class="lc-resumo">
+        <div class="lc-resumo-total">Total otimizado: R$ ${Number(r.totalOtimizado).toFixed(2)}</div>
+        ${economia > 0
+          ? `<div class="lc-resumo-eco">Economia de <strong>R$ ${economia.toFixed(2)}</strong>
+              comparado a comprar tudo no melhor mercado único (R$ ${Number(r.totalMercadoMaisBarato).toFixed(2)}).</div>`
+          : `<div class="lc-resumo-eco">Comprar tudo em um único mercado custaria o mesmo.</div>`}
+      </div>`;
 
-    listas.forEach((lista, idx) => {
-      const card = document.createElement('div');
-      card.className = 'card card-sm';
-      card.style.marginBottom = '14px';
-
-      const total    = lista.itens.length;
-      const checked  = lista.itens.filter(it => it.done).length;
-
-      card.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div>
-            <div style="font-family:var(--font-head);font-weight:700;font-size:15px;">${lista.nome}</div>
-            <div style="font-size:12px;color:var(--ink-soft);">${checked}/${total} itens</div>
+    const planosHtml = planos.map(pl => {
+      const itensHtml = pl.itens.map(it => `
+        <div class="lc-plano-item">
+          <span><strong>${it.nomeProduto}</strong> × ${it.quantidade}</span>
+          <span>R$ ${(Number(it.valor) * it.quantidade).toFixed(2)}</span>
+        </div>`).join('');
+      return `
+        <div class="lc-plano-card">
+          <div class="lc-plano-head">
+            <div class="lc-plano-merc">📍 ${pl.nomeMercado}</div>
+            <div class="lc-plano-sub">R$ ${Number(pl.subtotal).toFixed(2)}</div>
           </div>
-          <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px;" data-del="${idx}">Excluir</button>
-        </div>
-        <div id="itens-${idx}">
-          ${lista.itens.map((item, iIdx) => `
-            <div class="shopping-list-item" data-lista="${idx}" data-item="${iIdx}">
-              <div class="shopping-list-check ${item.done ? 'checked' : ''}" data-check="${idx}-${iIdx}">
-                ${item.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-              </div>
-              <div class="shopping-list-text ${item.done ? 'checked' : ''}">${item.nome}</div>
-              ${item.qtd ? `<div class="shopping-list-qty">x${item.qtd}</div>` : ''}
-            </div>`).join('')}
+          ${itensHtml}
         </div>`;
-      container.appendChild(card);
-    });
+    }).join('');
 
-    // Toggle check
-    container.querySelectorAll('[data-check]').forEach(el => {
-      el.addEventListener('click', () => {
-        const [li, it] = el.dataset.check.split('-').map(Number);
-        const listas = getListas();
-        listas[li].itens[it].done = !listas[li].itens[it].done;
-        saveListas(listas);
-        renderListas();
-      });
-    });
-
-    // Delete lista
-    container.querySelectorAll('[data-del]').forEach(el => {
-      el.addEventListener('click', () => {
-        const idx = +el.dataset.del;
-        const listas = getListas();
-        listas.splice(idx, 1);
-        saveListas(listas);
-        renderListas();
-        toast('Lista removida', 'info');
-      });
-    });
+    out.innerHTML = `
+      <div style="margin-top:8px;">
+        <h3 style="font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:12px;">🏆 Plano otimizado</h3>
+        ${resumo}
+        ${planosHtml}
+      </div>`;
   }
 
-  // Submit
-  document.getElementById('form-lista').addEventListener('submit', e => {
-    e.preventDefault();
-    const nome  = document.getElementById('listaNome').value.trim();
-    const texto = document.getElementById('listaItens').value.trim();
-
-    if (!nome) { toast('Dê um nome à lista', 'error'); return; }
-
-    const itens = texto.split('\n')
-      .map(l => l.trim()).filter(Boolean)
-      .map(l => {
-        const [nome, qtd] = l.split(':');
-        return { nome: nome.trim(), qtd: qtd ? qtd.trim() : '', done: false };
-      });
-
-    const listas = getListas();
-    listas.push({ nome, itens });
-    saveListas(listas);
-    renderListas();
-
-    document.getElementById('form-lista').reset();
-    toast('Lista salva!', 'success');
-  });
-
-  document.getElementById('btn-limpar').addEventListener('click', () => {
-    if (!confirm('Remover todas as listas?')) return;
-    saveListas([]);
-    renderListas();
-    toast('Listas removidas', 'info');
-  });
-
-  renderListas();
+  // ── Inicialização ────────────────────────────────────────────────
+  (async function init() {
+    await carregarProdutos();
+    await carregarListas();
+  })();
 </script>
 </body>
 </html>
