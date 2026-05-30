@@ -165,10 +165,15 @@
       `${lista.length} produto${lista.length !== 1 ? 's' : ''} encontrado${lista.length !== 1 ? 's' : ''}`;
 
     if (lista.length === 0) {
+      const u = getUsuarioLogado();
+      const podeCadastrar = u && (u.tipoConta === 'COMERCIO' || u.tipoConta === 'ADMIN');
+      const cta = podeCadastrar
+        ? ` ou <a href="cadastro-produto.html" style="color:var(--green)">cadastre um novo produto</a>`
+        : '';
       grid.innerHTML = `<div style="grid-column:1/-1;" class="empty-state">
         <div class="empty-state-icon">📦</div>
         <div class="empty-state-title">Nenhum produto encontrado</div>
-        <div class="empty-state-text">Tente ajustar os filtros ou <a href="cadastro-produto.html" style="color:var(--green)">cadastre um novo produto</a>.</div>
+        <div class="empty-state-text">Tente ajustar os filtros${cta}.</div>
       </div>`;
       return;
     }

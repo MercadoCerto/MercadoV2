@@ -61,13 +61,13 @@
         </div>
       </a>
 
-      <a href="cadastro-produto.html" class="action-card">
+      <a href="cadastro-produto.html" class="action-card" data-only-comercio style="display:none;">
         <div class="action-card-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
         </div>
         <div>
           <div class="action-card-label">Cadastrar Produto</div>
-          <div class="action-card-desc">Adicione um novo item</div>
+          <div class="action-card-desc">Adicione um novo item ao seu catálogo</div>
         </div>
       </a>
 
@@ -81,7 +81,7 @@
         </div>
       </a>
 
-      <a href="cadastro-mercado.html" class="action-card">
+      <a href="cadastro-mercado.html" class="action-card" data-only-comercio style="display:none;">
         <div class="action-card-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
@@ -141,11 +141,18 @@
   // Adaptar interface baseado no usuario logado
   (function() {
     const u = getUsuarioLogado();
-    if (!u) return;
-
-    // Esconder cards de login/cadastro se logado
     const actions = document.querySelector('.actions-grid');
     if (!actions) return;
+
+    // Cards exclusivos de COMERCIO/ADMIN: por padrão escondidos no HTML,
+    // liberados aqui se o tipoConta permitir.
+    if (u && (u.tipoConta === 'COMERCIO' || u.tipoConta === 'ADMIN')) {
+      actions.querySelectorAll('[data-only-comercio]').forEach(el => {
+        el.style.display = '';
+      });
+    }
+
+    if (!u) return;
 
     // Adicionar card de dashboard no inicio
     const dashCard = document.createElement('a');
@@ -161,17 +168,10 @@
       </div>`;
     actions.insertBefore(dashCard, actions.firstChild);
 
-    // Esconder cards de Criar Conta e Login
-    const links = actions.querySelectorAll('a');
-    links.forEach(link => {
+    // Esconder cards de Criar Conta e Login (já está logado)
+    actions.querySelectorAll('a').forEach(link => {
       if (link.href.includes('cadastro.html') || link.href.includes('login.html')) {
         link.style.display = 'none';
-      }
-      // Esconder "Cadastrar Produto" e "Cadastrar Mercado" para consumidores
-      if (u.tipoConta === 'USUARIO') {
-        if (link.href.includes('cadastro-produto.html') || link.href.includes('cadastro-mercado.html')) {
-          link.style.display = 'none';
-        }
       }
     });
   })();

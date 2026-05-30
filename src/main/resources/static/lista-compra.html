@@ -12,9 +12,9 @@
     .lc-search-wrap { position:relative; }
     .lc-suggest {
       position:absolute; top:100%; left:0; right:0; z-index:50;
-      background:var(--surface-1); border:1px solid var(--ink-faint);
+      background:var(--surface); border:1px solid var(--ink-faint);
       border-radius:var(--radius-sm); max-height:280px; overflow:auto;
-      box-shadow:0 8px 24px rgba(0,0,0,.08); display:none;
+      box-shadow:0 8px 24px rgba(0,0,0,.12); display:none; margin-top:4px;
     }
     .lc-suggest.open { display:block; }
     .lc-suggest-item {
@@ -37,7 +37,7 @@
     .lc-item-qty { display:flex; align-items:center; gap:6px; }
     .lc-item-qty input { width:54px; padding:4px 6px; text-align:center; }
 
-    .lc-plano-card { border:1px solid var(--ink-faint); border-radius:var(--radius-sm); padding:14px; margin-bottom:12px; background:var(--surface-1); }
+    .lc-plano-card { border:1px solid var(--ink-faint); border-radius:var(--radius-sm); padding:14px; margin-bottom:12px; background:var(--surface); }
     .lc-plano-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
     .lc-plano-merc { font-family:var(--font-head); font-weight:700; font-size:15px; }
     .lc-plano-sub  { font-weight:700; color:var(--green); }
@@ -267,8 +267,8 @@
             <div class="lc-suggest" id="suggest"></div>
           </div>
           <small style="color:var(--ink-soft);font-size:11px;">
-            Só produtos do catálogo podem ser adicionados.
-            <a href="cadastro-produto.html" style="color:var(--green)">Cadastre um novo</a> se faltar algo.
+            Só produtos do catálogo podem ser adicionados. Se faltar algo,
+            peça ao mercado para cadastrar.
           </small>
         </div>
 
@@ -308,7 +308,7 @@
 
       if (!current.length) {
         box.innerHTML = `<div class="lc-suggest-item" style="cursor:default;color:var(--ink-soft);">
-          Nenhum produto encontrado. <a href="cadastro-produto.html" style="color:var(--green)">Cadastrar?</a>
+          Nenhum produto encontrado no catálogo.
         </div>`;
         box.classList.add('open');
         return;
