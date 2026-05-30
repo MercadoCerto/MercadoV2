@@ -31,7 +31,20 @@ ALTER TABLE `mercado`
 ALTER TABLE `produto`
   ADD COLUMN IF NOT EXISTS `quantidade` int DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `peso` double DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS `unidade` varchar(10) DEFAULT NULL;
+  ADD COLUMN IF NOT EXISTS `unidade` varchar(10) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `tipo_medida` varchar(20) DEFAULT NULL;
+
+-- 5.1. Inferir tipo_medida para produtos já cadastrados a partir da unidade.
+--      PACK não é inferido — o comerciante precisa reabrir o cadastro para
+--      marcar produtos multipack manualmente.
+UPDATE `produto`
+   SET `tipo_medida` = CASE
+        WHEN `unidade` IN ('kg','g')  THEN 'PESO'
+        WHEN `unidade` IN ('L','ml')  THEN 'VOLUME'
+        WHEN `unidade` = 'un'         THEN 'UNIDADE'
+        ELSE 'UNIDADE'
+   END
+ WHERE `tipo_medida` IS NULL;
 
 -- 6. Adicionar foto do mercado
 ALTER TABLE `mercado`

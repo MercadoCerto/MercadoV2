@@ -342,7 +342,7 @@ async function carregarCatalogo(idMercado) {
       <div class="cat-row">
         <div class="cat-row-info">
           <div class="cat-row-name">${prod.nomeProduto || 'Produto #' + p.idProduto}</div>
-          <div class="cat-row-meta">${prod.categoria || ''} · ${prod.marca || ''}${prod.peso ? ' · ' + prod.peso + (prod.unidade || '') : ''}</div>
+          <div class="cat-row-meta">${prod.categoria || ''} · ${prod.marca || ''}${formatarEmbalagem(prod) ? ' · ' + formatarEmbalagem(prod) : ''}</div>
         </div>
         <div class="cat-row-price">R$ ${Number(p.valor).toFixed(2)}</div>
         <div class="cat-row-actions">
@@ -432,7 +432,8 @@ async function carregarProdutosSelect() {
   list.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.idProduto;
-    opt.textContent = `${p.nomeProduto} — ${p.marca}${p.peso ? ' (' + p.peso + (p.unidade || '') + ')' : ''}`;
+    const emb = formatarEmbalagem(p);
+    opt.textContent = `${p.nomeProduto} — ${p.marca}${emb ? ' (' + emb + ')' : ''}`;
     sel.appendChild(opt);
   });
 }

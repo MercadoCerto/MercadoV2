@@ -71,48 +71,22 @@
     }
   })();
 
-  // Calcula preço por unidade normalizado em R$/kg ou R$/L
-  function calcPrecoUnit(p) {
-    if (!p.peso || !p.unidade || p.peso <= 0) return null;
-    let fator = 1;
-    // Normaliza tudo para kg ou L
-    if (p.unidade === 'g') fator = 1000;
-    else if (p.unidade === 'ml') fator = 1000;
-    else if (p.unidade === 'kg' || p.unidade === 'L') fator = 1;
-    else return null; // 'un' não tem comparação por peso
-    return p.preco / (p.peso / fator);
-  }
-
-  function unidadeBase(unidade) {
-    if (unidade === 'kg' || unidade === 'g') return 'kg';
-    if (unidade === 'L' || unidade === 'ml') return 'L';
-    return null;
-  }
-
-  // Identifica o produto com melhor custo-benefício por grupo (marca+categoria+unidadeBase)
+  // Identifica o produto com melhor custo-benefício por grupo
+  // (marca + categoria + unidade base do preço/unidade).
   function calcularMelhoresPorUnidade(lista) {
     const grupos = {};
     lista.forEach(p => {
-      const ub = unidadeBase(p.unidade);
-      if (!ub || !p.peso) return;
-      const chave = `${(p.categoria||'').toLowerCase()}|${(p.marca||'').toLowerCase()}|${ub}`;
-      if (!grupos[chave]) grupos[chave] = [];
-      grupos[chave].push(p);
+      const pu = precoUnitBase(p);
+      if (!pu) return;
+      const chave = `${(p.categoria||'').toLowerCase()}|${(p.marca||'').toLowerCase()}|${pu.unidadeBase}`;
+      (grupos[chave] = grupos[chave] || []).push({ p, pu: pu.valor });
     });
 
     const melhores = new Set();
     Object.values(grupos).forEach(grupo => {
-      if (grupo.length < 2) return; // só marca se houver ao menos 2 para comparar
-      let melhor = grupo[0];
-      let melhorPU = calcPrecoUnit(melhor);
-      grupo.forEach(p => {
-        const pu = calcPrecoUnit(p);
-        if (pu !== null && melhorPU !== null && pu < melhorPU) {
-          melhor = p;
-          melhorPU = pu;
-        }
-      });
-      melhores.add(melhor.idProduto);
+      if (grupo.length < 2) return;
+      const melhor = grupo.reduce((a, b) => (b.pu < a.pu ? b : a));
+      melhores.add(melhor.p.idProduto);
     });
     return melhores;
   }
@@ -168,11 +142,11 @@
         break;
       case 'preco-unit-asc':
         sorted.sort((a, b) => {
-          const pa = calcPrecoUnit(a), pb = calcPrecoUnit(b);
-          if (pa === null && pb === null) return 0;
-          if (pa === null) return 1;
-          if (pb === null) return -1;
-          return pa - pb;
+          const pa = precoUnitBase(a), pb = precoUnitBase(b);
+          if (!pa && !pb) return 0;
+          if (!pa) return 1;
+          if (!pb) return -1;
+          return pa.valor - pb.valor;
         });
         break;
       case 'categoria-asc':
@@ -205,8 +179,8 @@
     lista.forEach(p => {
       const nomeMercado = mercadoMap[p.idMercado] || 'Não informado';
       const imgUrl = p.imagem ? `${API}/uploads/${p.imagem}` : null;
-      const precoUnit = calcPrecoUnit(p);
-      const ub = unidadeBase(p.unidade);
+      const pu = precoUnitBase(p);
+      const embalagem = formatarEmbalagem(p);
       const isMelhor = melhores.has(p.idProduto);
 
       const card = document.createElement('div');
@@ -225,7 +199,7 @@
             <span style="color:var(--ink-faint)">•</span>
             <span>${p.marca || '—'}</span>
           </div>
-          ${p.peso ? `<div class="product-card-meta" style="margin-top:2px;">⚖️ ${p.peso}${p.unidade || ''}</div>` : ''}
+          ${embalagem ? `<div class="product-card-meta" style="margin-top:2px;">⚖️ ${embalagem}</div>` : ''}
           <div class="product-card-meta" style="margin-top:2px;">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
             ${nomeMercado}
@@ -236,8 +210,8 @@
           </div>` : ''}
           ${p.codigoBarras ? `<div class="product-card-meta" style="font-size:11px; color:var(--ink-faint);"># ${p.codigoBarras}</div>` : ''}
           <div class="product-card-price">R$ ${(p.preco || 0).toFixed(2)}</div>
-          ${precoUnit !== null ? `<div class="preco-unit">≈ R$ ${precoUnit.toFixed(2)}/${ub}</div>` : ''}
-          ${isMelhor ? `<span class="badge-melhor">✓ Melhor custo por ${ub}</span>` : ''}
+          ${pu ? `<div class="preco-unit">≈ R$ ${pu.valor.toFixed(2)}/${pu.unidadeBase}</div>` : ''}
+          ${isMelhor && pu ? `<span class="badge-melhor">✓ Melhor custo por ${pu.unidadeBase}</span>` : ''}
           <a href="comparar.html?produto=${p.idProduto}" class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:8px;">Comparar preços</a>
         </div>`;
       grid.appendChild(card);

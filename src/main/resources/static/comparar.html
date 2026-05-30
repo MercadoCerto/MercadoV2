@@ -151,11 +151,10 @@ async function renderTabela(precos) {
   } catch {}
 
   function calcPU(valor) {
-    if (!produtoInfo || !produtoInfo.peso || !produtoInfo.unidade || produtoInfo.peso <= 0) return null;
-    let fator = 1;
-    if (produtoInfo.unidade === 'g' || produtoInfo.unidade === 'ml') fator = 1000;
-    const ub = (produtoInfo.unidade === 'kg' || produtoInfo.unidade === 'g') ? 'kg' : 'L';
-    return { pu: valor / (produtoInfo.peso / fator), ub };
+    if (!produtoInfo) return null;
+    // Reaproveita precoUnitBase substituindo o preço pelo valor deste mercado.
+    const r = precoUnitBase({ ...produtoInfo, preco: valor });
+    return r ? { pu: r.valor, ub: r.unidadeBase } : null;
   }
 
   cont.innerHTML = `

@@ -52,26 +52,54 @@
           </div>
         </div>
 
-        <!-- Quantidade e Peso/Volume -->
-        <div class="row">
-          <div class="form-group">
-            <label class="form-label" for="quantidade">Quantidade na embalagem</label>
-            <input class="form-input" id="quantidade" type="number" min="1" step="1" placeholder="Ex: 12 (para 12 ovos)"/>
+        <!-- Tipo de medida -->
+        <div class="form-group">
+          <label class="form-label" for="tipoMedida">Como o produto é medido? <span class="req">*</span></label>
+          <select class="form-select" id="tipoMedida" required>
+            <option value="">Selecione…</option>
+            <option value="PESO">Peso (kg / g)</option>
+            <option value="VOLUME">Volume (L / ml)</option>
+            <option value="UNIDADE">Unidade (itens contáveis)</option>
+            <option value="PACK">Pack (N itens × conteúdo)</option>
+          </select>
+          <small id="hint-tipo" style="color:var(--ink-soft);font-size:11px;display:block;margin-top:4px;">
+            Escolha o tipo para preencher os campos corretos.
+          </small>
+        </div>
+
+        <!-- PESO / VOLUME: peso + unidade -->
+        <div class="form-group" id="grp-peso" style="display:none;">
+          <label class="form-label" for="peso"><span id="lbl-peso">Peso</span> da embalagem <span class="req">*</span></label>
+          <div style="display:flex;gap:8px;">
+            <input class="form-input" id="peso" type="number" step="0.001" min="0" placeholder="Ex: 5" style="flex:1"/>
+            <select class="form-select" id="unidade" style="width:90px;"></select>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="peso">Peso / Volume</label>
-            <div style="display:flex;gap:8px;">
-              <input class="form-input" id="peso" type="number" step="0.001" min="0" placeholder="Ex: 5" style="flex:1"/>
-              <select class="form-select" id="unidade" style="width:90px;">
-                <option value="">—</option>
-                <option value="kg">kg</option>
-                <option value="g">g</option>
-                <option value="L">L</option>
-                <option value="ml">ml</option>
-                <option value="un">un</option>
-              </select>
+        </div>
+
+        <!-- UNIDADE: quantidade simples -->
+        <div class="form-group" id="grp-quantidade-simples" style="display:none;">
+          <label class="form-label" for="qtdSimples">Quantidade de itens na embalagem <span class="req">*</span></label>
+          <input class="form-input" id="qtdSimples" type="number" min="1" step="1" placeholder="Ex: 12 (para uma cartela de 12 ovos)"/>
+        </div>
+
+        <!-- PACK: quantidade × peso unitário -->
+        <div id="grp-pack" style="display:none;">
+          <div class="row">
+            <div class="form-group">
+              <label class="form-label" for="qtdPack">Itens no pack <span class="req">*</span></label>
+              <input class="form-input" id="qtdPack" type="number" min="1" step="1" placeholder="Ex: 6"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pesoPack">Conteúdo por item <span class="req">*</span></label>
+              <div style="display:flex;gap:8px;">
+                <input class="form-input" id="pesoPack" type="number" step="0.001" min="0" placeholder="Ex: 500" style="flex:1"/>
+                <select class="form-select" id="unidadePack" style="width:90px;"></select>
+              </div>
             </div>
           </div>
+          <small style="color:var(--ink-soft);font-size:11px;display:block;margin-top:-8px;margin-bottom:18px;">
+            Ex.: pack de 6 garrafas de 500 ml → 6 × 500 ml.
+          </small>
         </div>
 
         <div class="form-group">
@@ -155,13 +183,70 @@
     }
   }
 
+  // ── Mostra/esconde campos conforme tipo de medida ─────────────
+  const UNIDADES_POR_TIPO = {
+    PESO:   [['kg','kg'],['g','g']],
+    VOLUME: [['L','L'],['ml','ml']],
+    PACK:   [['kg','kg'],['g','g'],['L','L'],['ml','ml']],
+  };
+
+  function popularUnidades(selectEl, tipo) {
+    selectEl.innerHTML = '';
+    (UNIDADES_POR_TIPO[tipo] || []).forEach(([v, label]) => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = label;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  document.getElementById('tipoMedida').addEventListener('change', (e) => {
+    const tipo = e.target.value;
+    const grpPeso = document.getElementById('grp-peso');
+    const grpQtd  = document.getElementById('grp-quantidade-simples');
+    const grpPack = document.getElementById('grp-pack');
+    const lblPeso = document.getElementById('lbl-peso');
+
+    grpPeso.style.display = (tipo === 'PESO' || tipo === 'VOLUME') ? '' : 'none';
+    grpQtd.style.display  = (tipo === 'UNIDADE') ? '' : 'none';
+    grpPack.style.display = (tipo === 'PACK')    ? '' : 'none';
+
+    if (tipo === 'PESO' || tipo === 'VOLUME') {
+      lblPeso.textContent = (tipo === 'PESO') ? 'Peso' : 'Volume';
+      popularUnidades(document.getElementById('unidade'), tipo);
+    }
+    if (tipo === 'PACK') {
+      popularUnidades(document.getElementById('unidadePack'), 'PACK');
+    }
+  });
+
   document.getElementById('form-produto').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btn-submit');
 
-    const pesoVal = document.getElementById('peso').value;
-    const unidadeVal = document.getElementById('unidade').value;
-    const qtdVal = document.getElementById('quantidade').value;
+    const tipoMedida = document.getElementById('tipoMedida').value;
+    if (!tipoMedida) { toast('Selecione o tipo de medida', 'error'); return; }
+
+    let quantidade = null, peso = null, unidade = null;
+    if (tipoMedida === 'PESO' || tipoMedida === 'VOLUME') {
+      peso    = parseFloat(document.getElementById('peso').value);
+      unidade = document.getElementById('unidade').value;
+      if (!peso || peso <= 0 || !unidade) {
+        toast('Informe o peso/volume e a unidade', 'error'); return;
+      }
+    } else if (tipoMedida === 'UNIDADE') {
+      quantidade = parseInt(document.getElementById('qtdSimples').value);
+      unidade = 'un';
+      if (!quantidade || quantidade <= 0) {
+        toast('Informe a quantidade de itens', 'error'); return;
+      }
+    } else if (tipoMedida === 'PACK') {
+      quantidade = parseInt(document.getElementById('qtdPack').value);
+      peso       = parseFloat(document.getElementById('pesoPack').value);
+      unidade    = document.getElementById('unidadePack').value;
+      if (!quantidade || quantidade <= 0 || !peso || peso <= 0 || !unidade) {
+        toast('Preencha itens, conteúdo e unidade do pack', 'error'); return;
+      }
+    }
 
     const produto = {
       nomeProduto:  document.getElementById('nome').value.trim(),
@@ -170,9 +255,10 @@
       validade:     document.getElementById('validade').value,
       codigoBarras: document.getElementById('codigoBarras').value.trim(),
       preco:        parseFloat(document.getElementById('preco').value),
-      quantidade:   qtdVal ? parseInt(qtdVal) : null,
-      peso:         pesoVal ? parseFloat(pesoVal) : null,
-      unidade:      unidadeVal || null,
+      tipoMedida,
+      quantidade,
+      peso,
+      unidade,
     };
 
     const idMercado = parseInt(document.getElementById('mercado').value);
@@ -196,6 +282,9 @@
         document.getElementById('form-produto').reset();
         document.getElementById('img-preview-box').style.display = 'none';
         document.getElementById('file-name').textContent = 'Clique para selecionar uma imagem';
+        document.getElementById('grp-peso').style.display = 'none';
+        document.getElementById('grp-quantidade-simples').style.display = 'none';
+        document.getElementById('grp-pack').style.display = 'none';
       } else {
         const txt = await res.text();
         toast('Erro: ' + txt, 'error');

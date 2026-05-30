@@ -36,11 +36,23 @@ public class Produto {
     @Column(nullable = false, length = 30)
     private String validade;
 
-    /** Quantidade de embalagens (ex: 12 unidades de ovos) */
+    /**
+     * Tipo de medida da embalagem. Determina quais dos campos abaixo são
+     * relevantes e como o preço por unidade é calculado:
+     *   PESO    → peso + unidade (kg/g),  quantidade ignorada
+     *   VOLUME  → peso + unidade (L/ml),  quantidade ignorada
+     *   UNIDADE → quantidade,             peso/unidade ignorados
+     *   PACK    → quantidade × peso + unidade (kg/g/L/ml)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_medida", length = 20)
+    private TipoMedida tipoMedida;
+
+    /** Quantidade de itens na embalagem (UNIDADE: total; PACK: itens do pack). */
     @Column
     private Integer quantidade;
 
-    /** Peso/volume da embalagem (ex: 5.0 para 5kg, 1.5 para 1,5L) */
+    /** Peso/volume — total (PESO/VOLUME) ou por item (PACK). */
     @Column
     private Double peso;
 

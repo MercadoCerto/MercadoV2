@@ -4,6 +4,73 @@
 
 const API = 'http://localhost:8080';
 
+// ── Tipo de medida / preço por unidade ─────────
+// Infere o tipoMedida quando o produto vier sem ele (compatibilidade com
+// registros antigos). Retorna 'PESO', 'VOLUME', 'UNIDADE' ou null.
+function inferirTipoMedida(p) {
+  if (p && p.tipoMedida) return p.tipoMedida;
+  if (!p) return null;
+  if (p.unidade === 'kg' || p.unidade === 'g')  return 'PESO';
+  if (p.unidade === 'L'  || p.unidade === 'ml') return 'VOLUME';
+  if (p.unidade === 'un' || p.quantidade)       return 'UNIDADE';
+  return null;
+}
+
+// Retorna { valor, unidadeBase } com o preço normalizado em R$/kg, R$/L
+// ou R$/un — ou null se não houver dados suficientes.
+function precoUnitBase(p) {
+  if (!p || p.preco == null) return null;
+  const tipo = inferirTipoMedida(p);
+  const fatorParaBase = u => (u === 'g' || u === 'ml') ? 1000 : 1;
+  const unidadeBaseDe = u => (u === 'kg' || u === 'g') ? 'kg'
+                          : (u === 'L'  || u === 'ml') ? 'L'
+                          : null;
+
+  switch (tipo) {
+    case 'PESO':
+    case 'VOLUME': {
+      if (!p.peso || p.peso <= 0) return null;
+      const ub = unidadeBaseDe(p.unidade);
+      if (!ub) return null;
+      return { valor: p.preco / (p.peso / fatorParaBase(p.unidade)), unidadeBase: ub };
+    }
+    case 'UNIDADE': {
+      const q = p.quantidade || 1;
+      if (q <= 0) return null;
+      return { valor: p.preco / q, unidadeBase: 'un' };
+    }
+    case 'PACK': {
+      if (!p.peso || p.peso <= 0 || !p.quantidade || p.quantidade <= 0) return null;
+      const ub = unidadeBaseDe(p.unidade);
+      if (!ub) return null;
+      const totalBase = (p.peso * p.quantidade) / fatorParaBase(p.unidade);
+      return { valor: p.preco / totalBase, unidadeBase: ub };
+    }
+    default:
+      return null;
+  }
+}
+
+// String amigável da embalagem (ex: "5kg", "1.5L", "12 un", "6 × 500ml").
+function formatarEmbalagem(p) {
+  if (!p) return '';
+  const tipo = inferirTipoMedida(p);
+  const fmtNum = n => Number.isInteger(n) ? String(n) : String(n).replace('.', ',');
+  switch (tipo) {
+    case 'PESO':
+    case 'VOLUME':
+      return p.peso ? `${fmtNum(p.peso)}${p.unidade || ''}` : '';
+    case 'UNIDADE':
+      return p.quantidade ? `${p.quantidade} un` : '';
+    case 'PACK':
+      return (p.quantidade && p.peso)
+        ? `${p.quantidade} × ${fmtNum(p.peso)}${p.unidade || ''}`
+        : '';
+    default:
+      return p.peso ? `${fmtNum(p.peso)}${p.unidade || ''}` : '';
+  }
+}
+
 // ── Auth helpers ──────────────────────────────
 function getUsuarioLogado() {
   try {
